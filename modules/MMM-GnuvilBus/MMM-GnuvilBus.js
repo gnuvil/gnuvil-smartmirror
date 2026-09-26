@@ -4,7 +4,7 @@ Module.register("MMM-GnuvilBus", {
     stationMobileNo: null,
     routes: null,
     walkMinutes: null,
-    updateInterval: 30000,
+    updateInterval: 120000,
     staleAfter: 300000
   },
 

@@ -19,7 +19,7 @@ modules.push({
     stationMobileNo: "29561", // 외국어대학교, 외국어대학교기숙사 방면
     routes: null, // 이 정류장의 모든 노선을 표시
     walkMinutes: null,
-    updateInterval: 30000,
+    updateInterval: 120000,
     staleAfter: 300000
   }
 });

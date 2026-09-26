@@ -49,6 +49,8 @@ GNUVIL_WEATHER_LON=<실제 경도>
 
 기준 정류장은 **외국어대학교(29561), 외국어대학교기숙사 방면**으로 설정했습니다. `29561`은 승객용 정류소번호이고, 도착정보 API의 `stationId`는 **228001371**입니다. 이 값은 사용자가 [GBIS 정류소명/번호 목록조회](https://www.gbis.go.kr/gbis2014/publicService.action?cmd=mBusStation) 테스트에서 확인했습니다. `routes: null`은 이 정류장의 도착정보에 포함된 모든 노선을 표시합니다. 같은 번호의 양방향이 별도 항목으로 반환되면 행선지를 함께 표시합니다. 자세한 내용은 [버스 모듈 문서](modules/MMM-GnuvilBus/README.md)를 참고하세요.
 
+버스 도착정보는 2분마다 조회합니다. 개발계정의 공개된 하루 1,000회 신청 가능 트래픽에 대해 서버 한 대의 연속 실행은 약 720회/일입니다. 같은 키를 쓰는 다른 실행 인스턴스의 요청은 별도로 더해집니다.
+
 GBIS 키는 MagicMirror **서버를 시작하는 환경**의 `GBIS_API_KEY`에 넣습니다. 예를 들어 PowerShell에서는 `$env:GBIS_API_KEY = '<발급받은 디코딩 키>'`, Raspberry Pi의 셸에서는 `export GBIS_API_KEY='<발급받은 디코딩 키>'`를 사용한 뒤 MagicMirror를 시작합니다. 키는 `config.js`나 Git 저장소에 넣지 않습니다. 키가 없으면 서버가 요청을 보내지 않고 `버스 API 키 필요`를 표시합니다. 자동실행 단계에서는 서비스의 환경 변수 설정을 별도로 작성합니다.
 
 ## 학식 설정

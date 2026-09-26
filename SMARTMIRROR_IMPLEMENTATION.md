@@ -159,7 +159,7 @@ const config = {
         stationId: "REQUIRED",
         routes: [],
         walkMinutes: null,
-        updateInterval: 30000,
+        updateInterval: 120000,
         staleAfter: 300000
       }
     },
@@ -282,7 +282,7 @@ BUS_ERROR
   stationId: null,
   routes: [],
   walkMinutes: null,
-  updateInterval: 30000,
+  updateInterval: 120000,
   staleAfter: 300000
 }
 ```
@@ -358,13 +358,13 @@ config.routes에 지정된 노선만 필터링
 기본:
 
 ```text
-30초
+2분
 ```
 
 즉:
 
 ```js
-updateInterval: 30000
+updateInterval: 120000
 ```
 
 API 호출이 진행 중이면 동일 갱신 요청을 중복 실행하지 않는다.
@@ -807,7 +807,7 @@ API 키 전체 값이나 민감정보를 로그에 출력하지 않는다.
 - normalize
 - `BUS_DATA`
 - 렌더링
-- 30초 갱신
+- 2분 갱신
 - stale 처리
 
 완료 조건:
@@ -979,7 +979,7 @@ GBIS 관련 stationId, 표시 노선, API key가 실제로 제공되지 않은 �
 - frontend에 API key 노출 금지
 - BUS_CONFIG / BUS_DATA / BUS_ERROR 사용
 - 정류장 전체 도착정보를 1회 조회 후 노선 필터링
-- 30초 갱신
+- 2분 갱신
 - 중복 요청 방지
 - 내부 정규화 데이터 모델 사용
 - 마지막 정상 데이터 캐시
