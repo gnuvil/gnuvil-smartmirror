@@ -1,0 +1,43 @@
+.gnuvil-cafeteria {
+  color: var(--color-text);
+  width: min(48vw, 620px);
+  text-align: left;
+}
+
+.gnuvil-cafeteria-title {
+  color: var(--color-text-bright);
+  font-size: clamp(24px, 2.4vw, 32px);
+  margin-bottom: 12px;
+}
+
+.gnuvil-cafeteria-status,
+.gnuvil-cafeteria-empty {
+  color: var(--color-text-dimmed);
+  font-size: clamp(16px, 1.4vw, 20px);
+}
+
+.gnuvil-cafeteria-card {
+  border-top: 1px solid #555;
+  padding: 10px 0;
+}
+
+.gnuvil-cafeteria-name {
+  color: var(--color-text-bright);
+  font-size: clamp(20px, 1.9vw, 26px);
+}
+
+.gnuvil-cafeteria-meal {
+  color: var(--color-text-dimmed);
+  font-size: clamp(15px, 1.3vw, 18px);
+  margin-top: 5px;
+}
+
+.gnuvil-cafeteria-menu {
+  font-size: clamp(17px, 1.5vw, 21px);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .gnuvil-cafeteria { width: 42vw; }
+}

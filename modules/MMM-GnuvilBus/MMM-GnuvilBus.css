@@ -1,0 +1,104 @@
+.gnuvil-bus {
+  color: var(--color-text-bright);
+  min-width: 320px;
+  max-width: min(48vw, 620px);
+  text-align: left;
+}
+
+.gnuvil-bus-title {
+  color: var(--color-text-dimmed);
+  font-size: 18px;
+  letter-spacing: 0.16em;
+  margin-bottom: 16px;
+}
+
+.gnuvil-bus-status {
+  color: var(--color-text-dimmed);
+  font-size: 20px;
+  margin-bottom: 10px;
+}
+
+.gnuvil-bus-list.stale {
+  opacity: 0.55;
+}
+
+.gnuvil-bus-row {
+  align-items: baseline;
+  column-gap: 24px;
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) auto;
+  margin-bottom: 12px;
+}
+
+.gnuvil-bus-route,
+.gnuvil-bus-arrival {
+  font-size: clamp(28px, 3.1vw, 42px);
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.gnuvil-bus-route {
+  display: flex;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.gnuvil-bus-number,
+.gnuvil-bus-separator {
+  flex: none;
+}
+
+.gnuvil-bus-separator {
+  margin: 0 0.15em;
+}
+
+.gnuvil-bus-destination {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.gnuvil-bus-destination-text {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.gnuvil-bus-destination.is-overflowing .gnuvil-bus-destination-text {
+  animation: gnuvil-bus-marquee var(--marquee-duration, 8s) ease-in-out infinite;
+}
+
+@keyframes gnuvil-bus-marquee {
+  0%, 15% { transform: translateX(0); }
+  55%, 70% { transform: translateX(calc(-1 * var(--marquee-distance))); }
+  100% { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gnuvil-bus-destination.is-overflowing .gnuvil-bus-destination-text {
+    animation: none;
+  }
+}
+
+.gnuvil-bus-hint {
+  color: var(--color-text-dimmed);
+  font-size: 18px;
+  grid-column: 2;
+  text-align: right;
+}
+
+@media (max-width: 900px) {
+  .gnuvil-bus {
+    min-width: 0;
+    max-width: 42vw;
+  }
+
+  .gnuvil-bus-row {
+    column-gap: 10px;
+    grid-template-columns: minmax(65px, 1fr) auto;
+  }
+
+  .gnuvil-bus-route,
+  .gnuvil-bus-arrival {
+    font-size: clamp(20px, 3vw, 28px);
+  }
+}

@@ -1,0 +1,63 @@
+.gnuvil-now-playing {
+  align-items: center;
+  color: var(--color-text);
+  display: flex;
+  gap: 16px;
+  margin: 0 auto;
+  max-width: 600px;
+  text-align: left;
+}
+
+.gnuvil-now-playing-idle {
+  color: var(--color-text-dimmed);
+  font-size: clamp(16px, 1.5vw, 20px);
+  text-align: center;
+  width: 100%;
+}
+
+.gnuvil-now-playing-art {
+  border-radius: 6px;
+  flex: 0 0 72px;
+  height: 72px;
+  object-fit: cover;
+  width: 72px;
+}
+
+.gnuvil-now-playing-details {
+  min-width: 0;
+  width: 100%;
+}
+
+.gnuvil-now-playing-label {
+  color: var(--color-text-dimmed);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.gnuvil-now-playing-title {
+  color: var(--color-text-bright);
+  font-size: clamp(20px, 2.1vw, 28px);
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gnuvil-now-playing-artist {
+  font-size: clamp(16px, 1.5vw, 20px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gnuvil-now-playing-progress {
+  background: #555;
+  height: 3px;
+  margin-top: 9px;
+  width: 100%;
+}
+
+.gnuvil-now-playing-progress-fill {
+  background: var(--color-text-bright);
+  height: 100%;
+}

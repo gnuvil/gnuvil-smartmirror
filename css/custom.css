@@ -1,0 +1,84 @@
+:root {
+  --color-background: #000;
+  --color-text: #d0d0d0;
+  --color-text-bright: #fff;
+  --font-primary: "Roboto";
+  --font-secondary: "Roboto";
+  --gap-body-top: 42px;
+  --gap-body-right: 42px;
+  --gap-body-bottom: 42px;
+  --gap-body-left: 42px;
+}
+
+.clock .time {
+  --clock-time-size: clamp(96px, 12vw, 180px);
+  align-items: center;
+  display: inline-flex;
+  order: 0;
+  color: var(--color-text-bright);
+  font-family: "Roboto", "Segoe UI", sans-serif;
+  font-size: 0;
+  font-weight: 300;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.055em;
+  line-height: 0.95;
+}
+
+.clock .clock-hour-digital,
+.clock .clock-minute-digital {
+  font-size: var(--clock-time-size);
+  line-height: 0.95;
+}
+
+.clock .clock-hour-digital {
+  align-items: center;
+  display: inline-flex;
+}
+
+.clock .clock-hour-digital::after {
+  animation: gnuvil-clock-colon 1s ease-in-out infinite;
+  content: ":";
+  font-size: 0.78em;
+  letter-spacing: 0;
+  line-height: 1;
+  margin-inline: 0.16em;
+}
+
+@keyframes gnuvil-clock-colon {
+  50% { opacity: 0.12; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clock .clock-hour-digital::after {
+    animation: none;
+  }
+}
+
+.clock .date {
+  order: 1;
+  color: var(--color-text);
+  font-family: "Roboto", "Noto Sans CJK KR", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  font-size: clamp(21px, 2.3vw, 30px);
+  font-weight: 400;
+  letter-spacing: 0.025em;
+  line-height: 1.3;
+  margin-top: 20px;
+}
+
+.weather {
+  color: var(--color-text);
+  font-size: clamp(20px, 2vw, 28px);
+}
+
+@media (max-width: 900px) {
+  :root {
+    --gap-body-top: 28px;
+    --gap-body-right: 28px;
+    --gap-body-bottom: 28px;
+    --gap-body-left: 28px;
+  }
+
+  .clock .time {
+    --clock-time-size: clamp(80px, 12vw, 108px);
+  }
+}
