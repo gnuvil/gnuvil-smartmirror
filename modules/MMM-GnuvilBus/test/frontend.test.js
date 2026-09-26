@@ -21,13 +21,16 @@ class Element {
 
 const file = path.join(__dirname, "..", "MMM-GnuvilBus.js");
 let definition;
+let displayTick;
 vm.runInNewContext(fs.readFileSync(file, "utf8"), {
   Module: { register: (name, value) => {
     assert.equal(name, "MMM-GnuvilBus");
     definition = value;
   } },
   document: { createElement: (tagName) => new Element(tagName) },
-  Number
+  Number,
+  setInterval: (callback) => { displayTick = callback; return 1; },
+  clearInterval() {}
 });
 
 function moduleInstance(config = {}) {
@@ -35,6 +38,7 @@ function moduleInstance(config = {}) {
   const instance = {
     ...definition,
     config: { ...definition.defaults, ...config },
+    clockNow: () => 1000,
     sendSocketNotification: (...args) => sent.push(args),
     updateDom() {}
   };
@@ -97,4 +101,18 @@ test("shows destination for each direction and an empty status", () => {
   assert.equal(routeLabel.children[2].className, "gnuvil-bus-destination");
   instance.socketNotificationReceived("BUS_DATA", { updatedAt: 2, stale: false, routes: [] });
   assert.match(instance.getDom().text(), /현재 도착 정보 없음/);
+});
+
+test("counts down between API responses without sending another request", () => {
+  const { instance, sent } = moduleInstance();
+  instance.socketNotificationReceived("BUS_DATA", { updatedAt: 1000, stale: false, routes: [
+    { routeName: "1500-2", first: { minutes: 4 }, second: { minutes: 15 } }
+  ] });
+  assert.match(instance.getDom().text(), /1500-2 4분 · 15분/);
+  instance.clockNow = () => 61_000;
+  assert.match(instance.getDom().text(), /1500-2 3분 · 14분/);
+  displayTick();
+  assert.equal(sent.length, 1);
+  instance.clockNow = () => 241_000;
+  assert.match(instance.getDom().text(), /1500-2 곧 도착 · 11분/);
 });

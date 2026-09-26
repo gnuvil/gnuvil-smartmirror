@@ -12,13 +12,43 @@ Module.register("MMM-GnuvilBus", {
     this.busData = null;
     this.errorMessage = null;
     this.marqueeObserver = null;
+    this.displayTimer = setInterval(() => {
+      if (this.busData) this.updateDom();
+    }, 30000);
     this.sendSocketNotification("BUS_CONFIG", this.config);
   },
 
+  suspend() {
+    if (this.displayTimer) clearInterval(this.displayTimer);
+    this.displayTimer = null;
+  },
+
+  resume() {
+    if (!this.displayTimer) {
+      this.displayTimer = setInterval(() => {
+        if (this.busData) this.updateDom();
+      }, 30000);
+    }
+    this.updateDom();
+  },
+
+  clockNow() {
+    return Date.now();
+  },
+
+  elapsedSeconds() {
+    const updatedAt = this.busData?.updatedAt;
+    return Number.isFinite(updatedAt)
+      ? Math.max(0, Math.floor((this.clockNow() - updatedAt) / 1000))
+      : 0;
+  },
+
   waitSeconds(arrival) {
-    if (Number.isFinite(arrival?.seconds) && arrival.seconds >= 0) return arrival.seconds;
-    if (Number.isFinite(arrival?.minutes) && arrival.minutes >= 0) return arrival.minutes * 60;
-    return null;
+    const predicted = Number.isFinite(arrival?.seconds) && arrival.seconds >= 0
+      ? arrival.seconds
+      : Number.isFinite(arrival?.minutes) && arrival.minutes >= 0
+        ? arrival.minutes * 60 : null;
+    return predicted === null ? null : Math.max(0, predicted - this.elapsedSeconds());
   },
 
   soonestSeconds(route) {
@@ -108,13 +138,14 @@ Module.register("MMM-GnuvilBus", {
       }
       const first = this.waitSeconds(route.first) !== null ? route.first : route.second;
       const second = first === route.first && this.waitSeconds(route.second) !== null ? route.second : null;
-      const firstMinutes = first.minutes ?? Math.ceil(first.seconds / 60);
-      const secondMinutes = second && (second.minutes ?? Math.ceil(second.seconds / 60));
+      const firstMinutes = Math.ceil(this.waitSeconds(first) / 60);
+      const secondMinutes = second && Math.ceil(this.waitSeconds(second) / 60);
+      const formatArrival = (minutes) => minutes === 0 ? "곧 도착" : `${minutes}분`;
       const arrival = document.createElement("span");
       arrival.className = "gnuvil-bus-arrival";
       arrival.textContent = secondMinutes == null
-        ? `${firstMinutes}분`
-        : `${firstMinutes}분 · ${secondMinutes}분`;
+        ? formatArrival(firstMinutes)
+        : `${formatArrival(firstMinutes)} · ${formatArrival(secondMinutes)}`;
       row.append(name, arrival);
 
       const walkMinutes = this.config.walkMinutes;
