@@ -2,6 +2,24 @@
 
 GNuvil 동아리방용 MagicMirror² 설정과 전용 모듈을 관리하는 저장소입니다. MagicMirror² 본체는 별도로 설치하며, 본체 소스는 수정하지 않습니다.
 
+## 빠른 사용법
+
+1. MagicMirror²와 Node.js 24를 설치합니다. 아래 [설치 및 실행](#설치-및-실행)에 적힌 대로 이 저장소의 `config/config.js`, `css/custom.css`, 세 개의 전용 모듈 폴더를 MagicMirror 설치 폴더의 같은 위치에 복사합니다.
+2. MagicMirror를 실행할 터미널에서 버스 API 키를 설정합니다. 키는 파일에 적지 않습니다.
+3. MagicMirror 설치 폴더에서 설정을 검사하고 서버를 시작합니다.
+
+```powershell
+# Windows PowerShell
+$env:GBIS_API_KEY = '<발급받은 키>'
+cd '<MagicMirror 설치 폴더>'
+node js/check_config.js
+node serveronly/index.js
+```
+
+브라우저에서 [http://localhost:8080](http://localhost:8080)을 열면 됩니다. 서버를 끌 때는 터미널에서 `Ctrl+C`를 누릅니다. Raspberry Pi에서는 같은 파일을 복사하고 `GBIS_API_KEY`를 설정한 뒤 MagicMirror 설치 폴더에서 `node --run start`를 실행합니다. 음악 정보까지 표시하려면 [음악 재생 정보 설정](#음악-재생-정보-설정)을 따릅니다.
+
+화면에는 왼쪽 위 시계, 오른쪽 위 버스 도착정보, 왼쪽 아래 날씨, 오른쪽 아래 학식, 하단 음악 정보가 표시됩니다. 버스는 도착이 가까운 순서로 보여줍니다.
+
 ## 개발 및 배포 기준
 
 - 개발: 데스크탑에서 작성하고 검증한 뒤 Git으로 Raspberry Pi에 전달
