@@ -1,6 +1,6 @@
-# GNuvil 스마트미러
+# Gnuvil 스마트미러
 
-GNuvil 동아리방용 MagicMirror² 설정과 전용 모듈을 관리하는 저장소입니다. MagicMirror² 본체는 별도로 설치하며, 본체 소스는 수정하지 않습니다.
+Gnuvil 동아리방용 MagicMirror² 설정과 전용 모듈을 관리하는 저장소입니다. MagicMirror² 본체는 별도로 설치하며, 본체 소스는 수정하지 않습니다.
 
 ## 빠른 사용법
 

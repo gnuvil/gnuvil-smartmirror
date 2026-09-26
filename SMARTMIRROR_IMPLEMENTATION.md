@@ -1,4 +1,4 @@
-# GNuvil 스마트미러 구현 명세
+# Gnuvil 스마트미러 구현 명세
 
 > - 파일명: `SMARTMIRROR_IMPLEMENTATION.md`
 > - 상태: Draft v0.1
@@ -21,7 +21,7 @@
 
 1. MagicMirror² core는 직접 수정하지 않는다.
 2. 기본 기능은 가능한 한 기본 모듈을 사용한다.
-3. GNuvil 전용 기능은 `modules/` 아래의 커스텀 모듈로 구현한다.
+3. Gnuvil 전용 기능은 `modules/` 아래의 커스텀 모듈로 구현한다.
 4. API 키, 토큰, 비밀번호를 프론트엔드 코드나 Git 저장소에 저장하지 않는다.
 5. 외부 API 호출은 원칙적으로 `node_helper.js`에서 수행한다.
 6. frontend 모듈은 외부 API 원본 구조를 직접 해석하지 않는다.
@@ -645,7 +645,7 @@ frontend는 화면 아래쪽 중앙에 `현재 재생 중인 음악이 없습니
 
 # 16. CSS 원칙
 
-모든 GNuvil 전용 스타일 변경은 가능하면 다음에서 처리한다.
+모든 Gnuvil 전용 스타일 변경은 가능하면 다음에서 처리한다.
 
 ```text
 css/custom.css
