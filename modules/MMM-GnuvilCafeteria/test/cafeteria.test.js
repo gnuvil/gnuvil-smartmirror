@@ -15,9 +15,12 @@ const html = `<table><caption>메뉴 상세 - 요일/메뉴</caption><thead><tr>
 <tr><th>석식<br>(17:30<br> ~ <br>18:30)</th>${empty.repeat(7)}</tr>
 </tbody></table>`;
 
-test("uses Seoul date and Sunday-to-Saturday week across month boundaries", () => {
+test("uses Seoul date and clamps the requested week to the selected month", () => {
+  assert.deepEqual(koreanDay(new Date("2026-09-27T04:00:00Z")), {
+    date: "2026-09-27", year: "2026", month: "09", firstDay: "27", lastDay: "30"
+  });
   assert.deepEqual(koreanDay(new Date("2026-09-30T16:00:00Z")), {
-    date: "2026-10-01", year: "2026", month: "10", firstDay: "27", lastDay: "3"
+    date: "2026-10-01", year: "2026", month: "10", firstDay: "1", lastDay: "3"
   });
 });
 
@@ -34,8 +37,54 @@ test("parses the selected day, menu, price and closed days", () => {
   assert.throws(() => parseMenu("<html>error</html>", cafe, "2026-09-22"), /table is missing/);
 });
 
+test("parses the shorter tables returned at a month boundary", () => {
+  for (const [start, end, selected] of [
+    ["2026-09-27", 4, "2026-09-27"],
+    ["2026-10-01", 3, "2026-10-01"]
+  ]) {
+    const dates = Array.from({ length: end }, (_, index) => {
+      const day = String(Number(start.slice(-2)) + index).padStart(2, "0");
+      return `<th><span id="date_${start.slice(0, 8)}${day}"></span></th>`;
+    }).join("");
+    const shortHtml = `<table><caption>메뉴 상세</caption><thead><tr>${dates}</tr></thead>`
+      + `<tbody><tr><th>중식</th>${empty.repeat(end)}</tr></tbody></table>`;
+    assert.deepEqual(parseMenu(shortHtml, CAFETERIAS[0], selected).meals, []);
+  }
+});
+
+test("sends month-clamped request parameters on both sides of the boundary", async () => {
+  for (const [time, month, first, last] of [
+    ["2026-09-27T04:00:00Z", "09", "27", "30"],
+    ["2026-09-30T16:00:00Z", "10", "1", "3"]
+  ]) {
+    const requests = [];
+    const service = new CafeteriaService({
+      fetchImpl: async (_, { body }) => {
+        requests.push(body);
+        const date = `${time.startsWith("2026-09-27") ? "2026-09-27" : "2026-10-01"}`;
+        const days = Array.from({ length: Number(last) - Number(first) + 1 }, (_, index) =>
+          `<th><span id="date_${date.slice(0, 8)}${String(Number(first) + index).padStart(2, "0")}"></span></th>`).join("");
+        return { ok: true, text: async () => `<table><caption>메뉴 상세</caption><thead><tr>${days}</tr></thead>`
+          + `<tbody><tr><th>중식</th>${empty.repeat(Number(last) - Number(first) + 1)}</tr></tbody></table>` };
+      },
+      emit() {},
+      log: { error() {} },
+      now: () => Date.parse(time)
+    });
+    await service.refresh();
+    assert.equal(requests.length, 3);
+    for (const body of requests) {
+      assert.equal(body.get("selMonth"), month);
+      assert.equal(body.get("selWeekFirstDay"), first);
+      assert.equal(body.get("selWeekLastDay"), last);
+    }
+    service.stop();
+  }
+});
+
 test("fetches three cafeteria IDs and preserves successful data on partial failure", async () => {
   const events = [];
+  const errors = [];
   let failDorm = false;
   const requests = [];
   const service = new CafeteriaService({
@@ -49,7 +98,7 @@ test("fetches three cafeteria IDs and preserves successful data on partial failu
       return { ok: true, text: async () => html };
     },
     emit: (name, data) => events.push({ name, data }),
-    log: { error() {} },
+    log: { error: (...args) => errors.push(args) },
     now: () => Date.parse("2026-09-22T03:00:00Z")
   });
   await service.refresh();
@@ -60,6 +109,8 @@ test("fetches three cafeteria IDs and preserves successful data on partial failu
   await service.refresh();
   assert.equal(events[1].data.partialFailure, true);
   assert.equal(events[1].data.cafes[2].meals.length, 1);
+  assert.match(errors[0][0], /h205 menu fetch failed:/);
+  assert.match(errors[0][1].message, /HTTP 500/);
   service.stop();
 });
 

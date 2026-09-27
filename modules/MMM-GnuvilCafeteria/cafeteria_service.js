@@ -96,7 +96,7 @@ class CafeteriaService {
           return result.value;
         }
         failed += 1;
-        this.log.error(`[MMM-GnuvilCafeteria] ${cafeteria.id} menu fetch failed`);
+        this.log.error(`[MMM-GnuvilCafeteria] ${cafeteria.id} menu fetch failed:`, result.reason);
         const cached = this.cache.get(cafeteria.id);
         return cached?.date === day.date ? cached.data : { ...cafeteria, meals: [] };
       });

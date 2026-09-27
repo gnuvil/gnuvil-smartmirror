@@ -29,7 +29,7 @@ function parseMenu(html, cafeteria, date) {
   if (!head || !body) throw new Error("HUFS menu table is incomplete");
   const dates = [...head.matchAll(/id=["']date_(\d{4}-\d{2}-\d{2})["']/gi)].map((match) => match[1]);
   const column = dates.indexOf(date);
-  if (column < 0 || dates.length !== 7) throw new Error("HUFS menu date is missing");
+  if (column < 0 || dates.length > 7) throw new Error("HUFS menu date is missing");
 
   const meals = [];
   for (const row of body.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
@@ -70,8 +70,8 @@ function koreanDay(date) {
     date: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
     year: String(year),
     month: String(month).padStart(2, "0"),
-    firstDay: String(new Date(utc - weekday * 86400000).getUTCDate()),
-    lastDay: String(new Date(utc + (6 - weekday) * 86400000).getUTCDate())
+    firstDay: String(Math.max(1, day - weekday)),
+    lastDay: String(Math.min(new Date(Date.UTC(year, month, 0)).getUTCDate(), day + 6 - weekday))
   };
 }
 
