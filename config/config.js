@@ -1,6 +1,7 @@
 const clock = {
   module: "clock",
   position: "top_left",
+  header: "GNUVIL Smart Mirror",
   config: {
     timeFormat: 24,
     displaySeconds: false,

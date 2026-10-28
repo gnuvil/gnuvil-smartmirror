@@ -26,6 +26,20 @@
   margin-bottom: 4px;
 }
 
+/* 시계 위 "GNUVIL Smart Mirror" 문구. 오른쪽 BUS 제목과 같은 줄에 오도록 크기·행간을 맞춘다. */
+.module.clock .module-header {
+  border-bottom: none;
+  color: var(--color-text-bright);
+  font-size: 18px;
+  letter-spacing: 0.16em;
+  line-height: 1;
+  /* 시계 숫자 위쪽의 글꼴 여백을 빼서 문구–숫자 간격도 9px로 맞춘다. */
+  margin-bottom: -6px;
+  opacity: 0.4;
+  padding-bottom: 0;
+  text-transform: none;
+}
+
 .region.bottom.bar {
   transform: translateX(var(--gnuvil-bottom-shift));
 }
