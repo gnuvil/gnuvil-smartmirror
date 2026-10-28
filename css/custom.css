@@ -70,6 +70,13 @@
   font-size: clamp(20px, 2vw, 28px);
 }
 
+/* 날씨 지역명 아래의 기본 구분선을 없애고 온도와 붙여 쓴다. */
+.module.weather .module-header {
+  border-bottom: none;
+  padding-bottom: 0;
+  margin-bottom: 0;
+}
+
 @media (max-width: 900px) {
   :root {
     --gap-body-top: 28px;

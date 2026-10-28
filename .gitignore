@@ -5,3 +5,5 @@ config/private.js
 *.secret
 node_modules/
 .local/
+windows/bin/
+config/basepath.js

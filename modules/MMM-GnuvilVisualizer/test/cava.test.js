@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { EventEmitter } = require("node:events");
-const { CavaService, cavaConfig, parseFrame } = require("../cava_service");
+const { CavaService, cavaConfig, parseFrame, visualizerCommand } = require("../cava_service");
 
 function fakeChild() {
   const child = new EventEmitter();
@@ -44,6 +44,32 @@ test("forwards frames split across chunks and pauses during silence", () => {
   assert.equal(frames.at(-1), null);
   service.stop();
   assert.equal(child.killed, true);
+});
+
+test("runs cava with a generated config unless another command is set", () => {
+  assert.deepEqual(visualizerCommand(undefined, { bars: 32, framerate: 20 }, () => "/tmp/config"),
+    { file: "cava", args: ["-p", "/tmp/config"], name: "cava" });
+  const helper = visualizerCommand("/opt/gnuvil/loopback-bars", { bars: 16, framerate: 30 }, () => assert.fail("no cava config"));
+  assert.deepEqual(helper, { file: "/opt/gnuvil/loopback-bars", args: ["--bars", "16", "--framerate", "30"], name: "loopback-bars" });
+});
+
+test("spawns the configured helper and names it in errors", () => {
+  const errors = [];
+  const calls = [];
+  const child = fakeChild();
+  const service = new CavaService({
+    emit() {},
+    readCommand: () => "/opt/gnuvil/loopback-bars",
+    spawnImpl: (file, args) => { calls.push([file, args]); return child; },
+    setTimer: () => 1,
+    clearTimer() {},
+    log: { error: (message) => errors.push(message) }
+  });
+  service.start({ bars: 8, framerate: 20 });
+  child.emit("exit", 1);
+  assert.deepEqual(calls, [["/opt/gnuvil/loopback-bars", ["--bars", "8", "--framerate", "20"]]]);
+  assert.deepEqual(errors, ["[MMM-GnuvilVisualizer] loopback-bars exited with code 1"]);
+  service.stop();
 });
 
 test("reports a missing cava binary once and retries later", () => {

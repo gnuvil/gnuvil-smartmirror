@@ -37,11 +37,20 @@ function parseFrame(line, bars) {
   return values.map((value) => Math.min(value, MAX_LEVEL));
 }
 
+// GNUVIL_VISUALIZER_COMMAND를 지정하면 cava 대신 그 프로그램을 "--bars N --framerate N"으로 실행한다.
+// 그 프로그램도 cava의 raw ascii 출력과 같은 형식으로 써야 한다 (Windows용 windows/helpers/LoopbackBars.cs).
+function visualizerCommand(command, { bars, framerate }, configFile) {
+  if (command) return { file: command, args: ["--bars", String(bars), "--framerate", String(framerate)], name: path.basename(command) };
+  return { file: "cava", args: ["-p", configFile()], name: "cava" };
+}
+
 class CavaService {
-  constructor({ emit, log = console, spawnImpl = spawn, setTimer = setTimeout, clearTimer = clearTimeout } = {}) {
+  constructor({ emit, log = console, spawnImpl = spawn, setTimer = setTimeout, clearTimer = clearTimeout,
+    readCommand = () => process.env.GNUVIL_VISUALIZER_COMMAND } = {}) {
     this.emit = emit;
     this.log = log;
     this.spawnImpl = spawnImpl;
+    this.readCommand = readCommand;
     this.setTimer = setTimer;
     this.clearTimer = clearTimer;
     this.child = null;
@@ -73,9 +82,12 @@ class CavaService {
   spawnCava() {
     const options = this.options;
     if (!options) return;
-    const file = path.join(mkdtempSync(path.join(tmpdir(), "gnuvil-cava-")), "config");
-    writeFileSync(file, cavaConfig(options));
-    const child = this.spawnImpl("cava", ["-p", file], { stdio: ["ignore", "pipe", "pipe"] });
+    const command = visualizerCommand(this.readCommand(), options, () => {
+      const file = path.join(mkdtempSync(path.join(tmpdir(), "gnuvil-cava-")), "config");
+      writeFileSync(file, cavaConfig(options));
+      return file;
+    });
+    const child = this.spawnImpl(command.file, command.args, { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
     this.child = child;
     this.silentFrames = 0;
     let buffer = "";
@@ -87,8 +99,8 @@ class CavaService {
       for (const line of lines) this.handleLine(line, options.bars);
     });
     child.stderr.on("data", () => {});
-    child.on("error", (error) => this.handleExit(child, error.code === "ENOENT" ? "cava is not installed" : error.message));
-    child.on("exit", (code) => this.handleExit(child, `cava exited with code ${code}`));
+    child.on("error", (error) => this.handleExit(child, error.code === "ENOENT" ? `${command.name} is not installed` : error.message));
+    child.on("exit", (code) => this.handleExit(child, `${command.name} exited with code ${code}`));
   }
 
   handleLine(line, bars) {
@@ -120,4 +132,4 @@ class CavaService {
   }
 }
 
-module.exports = { CavaService, cavaConfig, parseFrame };
+module.exports = { CavaService, cavaConfig, parseFrame, visualizerCommand };

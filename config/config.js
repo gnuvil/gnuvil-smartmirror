@@ -24,13 +24,7 @@ modules.push({
   }
 });
 
-modules.push({
-  module: "MMM-GnuvilCafeteria",
-  position: "bottom_right",
-  config: {
-    refreshInterval: 4 * 60 * 60 * 1000
-  }
-});
+// 학식(MMM-GnuvilCafeteria)은 미러 공간을 너무 많이 차지해 화면에서 뺐다. 모듈은 레포에 남아 있다.
 
 modules.push({
   module: "MMM-GnuvilVisualizer",
@@ -67,9 +61,10 @@ if (
   longitude >= -180 &&
   longitude <= 180
 ) {
+  // 시계 바로 아래에 둔다 (같은 top_left에서 시계 다음 순서).
   modules.push({
     module: "weather",
-    position: "bottom_left",
+    position: "top_left",
     config: {
       weatherProvider: "openmeteo",
       type: "current",
@@ -89,6 +84,14 @@ const config = {
   customCss: "css/custom.css",
   modules
 };
+
+// Windows에서는 시작 스크립트가 미러 디스플레이 좌표를 "x,y,너비,높이"로 넘긴다. 없으면 기본값(주 화면)을 쓴다.
+const bounds = (environment.GNUVIL_MIRROR_BOUNDS || "").split(",").map((part) => Number(part.trim()));
+if (bounds.length === 4 && bounds.every(Number.isInteger) && bounds[2] > 0 && bounds[3] > 0) {
+  const [x, y, width, height] = bounds;
+  // focusable: false로 미러 창이 영상 창의 포커스를 가져가지 않게 한다.
+  config.electronOptions = { x, y, width, height, fullscreen: true, focusable: false, skipTaskbar: true };
+}
 
 if (typeof module !== "undefined") {
   module.exports = config;

@@ -1,0 +1,127 @@
+"use strict";
+
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const { EventEmitter } = require("node:events");
+const { SmtcPlayer, chooseSession, thumbnailData } = require("../smtc_player");
+
+const PNG = Buffer.from([137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 13]).toString("base64");
+
+function fakeChild() {
+  const child = new EventEmitter();
+  child.stdout = new EventEmitter();
+  child.stdout.setEncoding = () => {};
+  child.stderr = new EventEmitter();
+  child.kill = () => { child.killed = true; };
+  return child;
+}
+
+function setup({ coverLookup = null } = {}) {
+  let clock = 1_000_000;
+  const child = fakeChild();
+  const errors = [];
+  const player = new SmtcPlayer({
+    spawnImpl: () => child,
+    now: () => clock,
+    coverLookup,
+    log: { error: (message) => errors.push(message) },
+    setTimer: () => 1,
+    clearTimer() {}
+  });
+  player.start();
+  const send = (sessions) => child.stdout.emit("data", `${JSON.stringify({ sessions, now: clock })}\n`);
+  return { player, child, errors, send, tick: (ms) => { clock += ms; }, now: () => clock };
+}
+
+const edge = (overrides = {}) => ({
+  app: "msedge.exe", status: "Playing", title: "NewJeans (뉴진스) 'Ditto' Official MV", artist: "HYBE LABELS",
+  album: "", position: 10, duration: 185, updatedAt: 1_000_000, ...overrides
+});
+
+test("prefers a playing browser session over other players", () => {
+  const spotify = { app: "Spotify.exe", status: "Playing", title: "Song" };
+  const paused = { app: "msedge.exe", status: "Paused", title: "Video" };
+  const chrome = { app: "chrome.exe", status: "Playing", title: "Video" };
+  assert.equal(chooseSession([spotify, paused, chrome]), chrome);
+  assert.equal(chooseSession([spotify, paused]), spotify);
+  assert.equal(chooseSession([paused]), null);
+  assert.equal(chooseSession(undefined), null);
+});
+
+test("returns the cleaned title, extrapolated progress and thumbnail art", async () => {
+  const { player, send, tick } = setup();
+  send([edge({ thumbnail: PNG })]);
+  tick(4000);
+  assert.deepEqual(await player.get(), {
+    playing: true, title: "Ditto", artist: "NewJeans", album: "", position: 14, duration: 185,
+    artData: `data:image/png;base64,${PNG}`
+  });
+});
+
+test("prefers the iTunes cover over the YouTube thumbnail", async () => {
+  const lookups = [];
+  const { player, send } = setup({ coverLookup: async (artist, title) => { lookups.push([artist, title]); return "https://example.com/cover.jpg"; } });
+  send([edge({ thumbnail: PNG })]);
+  assert.equal((await player.get()).artData, `data:image/png;base64,${PNG}`);
+  await new Promise((resolve) => setImmediate(resolve));
+  const data = await player.get();
+  assert.equal(data.artUrl, "https://example.com/cover.jpg");
+  assert.equal(data.artData, undefined);
+  assert.deepEqual(lookups, [["NewJeans", "Ditto"]]);
+});
+
+test("hides progress after a track change until the timeline is updated", async () => {
+  const { player, send, tick, now } = setup();
+  send([edge()]);
+  tick(5000);
+  send([edge({ title: "Vaundy - 怪獣の花唄", artist: "Vaundy" })]);
+  let data = await player.get();
+  assert.equal(data.title, "怪獣の花唄");
+  assert.equal(data.position, null);
+  assert.equal(data.duration, null);
+  tick(1000);
+  send([edge({ title: "Vaundy - 怪獣の花唄", artist: "Vaundy", position: 3, duration: 232, updatedAt: now() })]);
+  data = await player.get();
+  assert.equal(data.position, 3);
+  assert.equal(data.duration, 232);
+});
+
+test("reports paused, empty and stale states as not playing", async () => {
+  const { player, send, tick } = setup();
+  send([edge({ status: "Paused" })]);
+  assert.deepEqual(await player.get(), { playing: false });
+  send([]);
+  assert.deepEqual(await player.get(), { playing: false });
+  send([edge()]);
+  tick(6000);
+  assert.deepEqual(await player.get(), { playing: false });
+});
+
+test("does not clean titles from non-browser players", async () => {
+  const { player, send } = setup();
+  send([{ app: "Spotify.exe", status: "Playing", title: "Ditto", artist: "NewJeans", album: "OMG", position: 1, duration: 185, updatedAt: 1_000_000 }]);
+  const data = await player.get();
+  assert.equal(data.title, "Ditto");
+  assert.equal(data.album, "OMG");
+});
+
+test("reports a missing reader once and fails requests until it is built", async () => {
+  const { player, child, errors } = setup();
+  child.emit("error", Object.assign(new Error("spawn"), { code: "ENOENT" }));
+  await assert.rejects(player.get(), /not built/);
+  assert.deepEqual(errors, ["[gnuvil-now-playing] SMTC reader is not built (run windows/build-helpers.ps1)"]);
+  player.stop();
+});
+
+test("ignores malformed lines and logs helper errors", async () => {
+  const { player, child, errors } = setup();
+  child.stdout.emit("data", "not json\n{\"error\":\"SMTC 응답 없음\"}\n");
+  assert.deepEqual(errors, ["[gnuvil-now-playing] SMTC error: SMTC 응답 없음"]);
+  assert.deepEqual(await player.get(), { playing: false });
+});
+
+test("accepts only small known image thumbnails", () => {
+  assert.equal(thumbnailData(PNG), `data:image/png;base64,${PNG}`);
+  assert.equal(thumbnailData(Buffer.from("hello world").toString("base64")), null);
+  assert.equal(thumbnailData(PNG + "A".repeat(360_000)), null);
+});
