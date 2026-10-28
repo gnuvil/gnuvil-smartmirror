@@ -10,6 +10,20 @@
   --gap-body-left: 42px;
   /* 실제 거울 틀에서 가운데로 보이도록 하단(비주얼라이저·Now Playing)을 옮기는 양. 음수면 왼쪽. */
   --gnuvil-bottom-shift: 17px;
+  /* 버스 영역이 왼쪽으로 넓어지지 않고 남겨 둘 폭(시계 + 간격). 시계는 tabular-nums라 폭이 일정하다. */
+  --gnuvil-clock-reserve: 380px;
+}
+
+/* 버스 영역을 시계 옆까지 넓힌다. 행선지가 덜 잘리도록 한다. */
+.gnuvil-bus {
+  width: calc(100vw - var(--gap-body-left) - var(--gap-body-right) - var(--gnuvil-clock-reserve));
+  max-width: none;
+}
+
+/* BUS 제목과 첫 줄 사이를 날씨의 지역명–온도 간격과 맞춘다. */
+.gnuvil-bus-title {
+  line-height: 1;
+  margin-bottom: 4px;
 }
 
 .region.bottom.bar {
