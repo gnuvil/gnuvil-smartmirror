@@ -10,6 +10,7 @@ const cases = [
   ["BLACKPINK - 'Shut Down' M/V", "BLACKPINK", "BLACKPINK", "Shut Down"],
   ["[MV] IU(아이유) _ Love wins all", "1theK (원더케이)", "IU", "Love wins all"],
   ["아이유 - 밤편지 (Lyrics)", "가사 채널", "아이유", "밤편지"],
+  ["W/X/Y - Tani Yuuki (Official Lyric Video)", "Tani Yuuki", "Tani Yuuki", "W/X/Y"],
   ["怪獣の花唄 / Vaundy ： MUSIC VIDEO", "Vaundy", "Vaundy", "怪獣の花唄"],
   ["青のすみか / キタニタツヤ - Where Our Blue Is / Tatsuya Kitani", "キタニタツヤ / Tatsuya Kitani", "キタニタツヤ", "青のすみか"],
   ["【아야츠노 유니 X 아이리 칸나】 점묘의 노래 (点描の唄) | Cover", "아야츠노 유니 AYATSUNO YUNI",

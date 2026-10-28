@@ -76,7 +76,12 @@ function cleanYouTubeTitle(rawTitle, rawChannel) {
     const [left, ...right] = text.split(DASH);
     const rest = right.join(" - ");
     // "곡명 - 원곡 가수 Cover 부른 사람"이면 앞쪽이 곡명이고 부른 사람은 채널이다.
+    const isChannel = (text) => channel && text.trim().toLowerCase() === channel.toLowerCase();
     if (/\bcover\b/i.test(rest.replace(BRACKETS, ""))) {
+      title = left;
+    } else if (isChannel(rest) && !isChannel(left)) {
+      // "곡명 - 아티스트" 순서인 영상은 오른쪽이 채널명과 같다.
+      artist = rest;
       title = left;
     } else {
       artist = left;
