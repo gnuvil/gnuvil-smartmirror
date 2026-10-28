@@ -1,0 +1,19 @@
+[Unit]
+Description=Gnuvil MagicMirror
+After=gnuvil-now-playing.service
+
+[Service]
+WorkingDirectory=%h/MagicMirror
+Environment=PATH=%h/.local/node/bin:/usr/local/bin:/usr/bin:/bin
+Environment=WAYLAND_DISPLAY=wayland-0
+Environment=GNUVIL_NOW_PLAYING_URL=http://127.0.0.1:8765/now-playing
+# GBIS_API_KEY 같은 비밀값은 Git 밖의 이 파일에 둔다.
+EnvironmentFile=-%h/.config/gnuvil/env
+# 데스크톱(labwc)이 뜰 때까지 기다린다.
+ExecStartPre=/bin/sh -c 'until [ -S "$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY" ]; do sleep 1; done'
+ExecStart=%h/.local/node/bin/node --run start:wayland
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,16 @@
+.gnuvil-visualizer {
+  margin: 0 auto 16px;
+  max-width: 600px;
+}
+
+.gnuvil-visualizer-canvas {
+  color: var(--color-text-bright);
+  display: block;
+  opacity: 0.85;
+  transition: opacity 0.6s ease;
+  width: 100%;
+}
+
+.gnuvil-visualizer-canvas.is-silent {
+  opacity: 0;
+}

@@ -11,6 +11,8 @@ const METADATA_FORMAT = ["{{status}}", "{{title}}", "{{artist}}", "{{album}}",
   "{{mpris:artUrl}}", "{{mpris:length}}", "{{position}}"].join(SEP);
 const MAX_ART_BYTES = 256 * 1024;
 const ART_CACHE_MS = 60 * 1000;
+const COVER_CACHE_MS = 30 * 60 * 1000;
+const COVER_TIMEOUT_MS = 3000;
 
 async function runPlayerctl(args) {
   const { stdout } = await execFileAsync("playerctl", args, {
@@ -40,15 +42,52 @@ function imageType(bytes) {
   return null;
 }
 
+// Bluetooth(AVRCP) 재생은 앨범아트를 보내지 않는 경우가 많아 iTunes 검색으로 표지를 찾는다.
+// 한국 스토어는 영문 아티스트명으로 찾지 못하는 곡이 있어 미국 스토어도 확인한다.
+async function searchCover(artist, title, { fetchImpl = fetch } = {}) {
+  for (const country of ["KR", "US"]) {
+    const url = new URL("https://itunes.apple.com/search");
+    url.search = new URLSearchParams({
+      term: `${artist} ${title}`.trim(), media: "music", entity: "song", limit: "1", country
+    }).toString();
+    const response = await fetchImpl(url, { signal: AbortSignal.timeout(COVER_TIMEOUT_MS), redirect: "error" });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const artwork = (await response.json())?.results?.[0]?.artworkUrl100;
+    if (typeof artwork !== "string") continue;
+    const art = new URL(artwork.replace(/\/\d+x\d+bb\./, "/600x600bb."));
+    return art.protocol === "https:" ? art.href : null;
+  }
+  return null;
+}
+
 class PlayerState {
   constructor({ run = runPlayerctl, read = readFile, fileStat = stat,
-    preferredPlayer = process.env.GNUVIL_PLAYER, now = Date.now } = {}) {
+    preferredPlayer = process.env.GNUVIL_PLAYER, now = Date.now,
+    coverLookup = process.env.GNUVIL_COVER_LOOKUP === "off" ? null : searchCover } = {}) {
     this.run = run;
     this.read = read;
     this.fileStat = fileStat;
     this.preferredPlayer = preferredPlayer;
     this.now = now;
+    this.coverLookup = coverLookup;
     this.artCache = { uri: null, value: null, expiresAt: 0 };
+    this.coverCache = new Map();
+  }
+
+  // 검색 결과(실패 포함)를 곡마다 캐시하고, 검색이 끝나기 전에는 기다리지 않고 글자만 보낸다.
+  fallbackCover(artist, title) {
+    if (!this.coverLookup || !title) return null;
+    const key = `${artist}\x1f${title}`;
+    const cached = this.coverCache.get(key);
+    if (cached && (cached.pending || this.now() < cached.expiresAt)) return cached.value;
+    const entry = { value: null, pending: true, expiresAt: 0 };
+    this.coverCache.set(key, entry);
+    if (this.coverCache.size > 50) this.coverCache.delete(this.coverCache.keys().next().value);
+    Promise.resolve()
+      .then(() => this.coverLookup(artist, title))
+      .then((url) => { entry.value = url ? { artUrl: url } : null; }, () => { entry.value = null; })
+      .finally(() => { entry.pending = false; entry.expiresAt = this.now() + COVER_CACHE_MS; });
+    return null;
   }
 
   async activePlayer() {
@@ -106,11 +145,12 @@ class PlayerState {
     if (!title) return { playing: false };
     const duration = seconds(rawLength);
     const position = seconds(rawPosition);
-    const art = await this.artwork(artUri?.trim());
+    const artist = clean(rawArtist);
+    const art = await this.artwork(artUri?.trim()) || this.fallbackCover(artist, title);
     return {
       playing: true,
       title,
-      artist: clean(rawArtist),
+      artist,
       album: clean(rawAlbum),
       position: position == null ? null : duration == null ? position : Math.min(position, duration),
       duration,
@@ -119,4 +159,4 @@ class PlayerState {
   }
 }
 
-module.exports = { PlayerState, imageType, seconds };
+module.exports = { PlayerState, imageType, searchCover, seconds };

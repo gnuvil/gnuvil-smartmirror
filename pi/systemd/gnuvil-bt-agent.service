@@ -1,0 +1,22 @@
+[Unit]
+Description=Gnuvil Bluetooth pairing agent (auto-accept, always discoverable)
+After=bluetooth.service
+Requires=bluetooth.service
+
+[Service]
+ExecStartPre=/usr/local/lib/gnuvil/bt-ensure-controller.sh
+ExecStartPre=/bin/sleep 2
+ExecStartPre=/usr/bin/bluetoothctl power on
+# main.conf의 Name보다 호스트 이름이 우선하므로 별칭을 직접 지정한다.
+ExecStartPre=/usr/bin/bluetoothctl system-alias "Gnuvil Mirror"
+ExecStartPre=/usr/bin/bluetoothctl discoverable on
+ExecStartPre=/usr/bin/bluetoothctl pairable on
+ExecStart=/usr/bin/bt-agent --capability=NoInputNoOutput
+# bt-agent는 SIGTERM으로 끝나지 않는다.
+KillSignal=SIGINT
+TimeoutStopSec=5
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,13 @@
+[Unit]
+Description=Gnuvil Now Playing API (playerctl)
+After=pipewire.service
+
+[Service]
+Environment=GNUVIL_NOW_PLAYING_BIND=127.0.0.1
+Environment=GNUVIL_NOW_PLAYING_PORT=8765
+ExecStart=%h/.local/node/bin/node %h/gnuvil-smartmirror/main-pc/now-playing-agent/server.js
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

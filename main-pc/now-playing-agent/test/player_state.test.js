@@ -3,7 +3,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { pathToFileURL } = require("node:url");
-const { PlayerState } = require("../player_state");
+const { PlayerState, searchCover } = require("../player_state");
 const { authorized, createServer } = require("../server");
 
 const SEP = "\x1f";
@@ -61,6 +61,52 @@ test("refreshes local artwork when its URI stays the same", async () => {
   assert.deepEqual(await state.artwork(uri), original);
   now = 60_000;
   assert.notDeepEqual(await state.artwork(uri), original);
+});
+
+test("looks up a cover once per track when the player sends none", async () => {
+  const lookups = [];
+  const state = new PlayerState({
+    run: async (args) => args.includes("status") ? `bluez${SEP}Playing`
+      : ["Playing", "Hype Boy", "NewJeans", "", "", "", ""].join(SEP),
+    coverLookup: async (artist, title) => {
+      lookups.push([artist, title]);
+      return "https://images.example/600x600bb.jpg";
+    }
+  });
+  assert.equal((await state.get()).artUrl, undefined);
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal((await state.get()).artUrl, "https://images.example/600x600bb.jpg");
+  assert.deepEqual(lookups, [["NewJeans", "Hype Boy"]]);
+});
+
+test("keeps text-only output when the cover search fails", async () => {
+  let calls = 0;
+  const state = new PlayerState({
+    run: async (args) => args.includes("status") ? `bluez${SEP}Playing`
+      : ["Playing", "Song", "Artist", "", "", "", ""].join(SEP),
+    coverLookup: async () => { calls += 1; throw new Error("offline"); }
+  });
+  await state.get();
+  await new Promise((resolve) => setImmediate(resolve));
+  const result = await state.get();
+  assert.equal(result.artUrl, undefined);
+  assert.equal(result.title, "Song");
+  assert.equal(calls, 1);
+});
+
+test("builds a large iTunes artwork URL, falling back to the US store", async () => {
+  const requested = [];
+  const url = await searchCover("NewJeans", "Ditto", {
+    fetchImpl: async (target) => {
+      requested.push(target);
+      const results = target.searchParams.get("country") === "US"
+        ? [{ artworkUrl100: "https://is1-ssl.mzstatic.com/image/thumb/a/100x100bb.jpg" }] : [];
+      return { ok: true, json: async () => ({ results }) };
+    }
+  });
+  assert.equal(url, "https://is1-ssl.mzstatic.com/image/thumb/a/600x600bb.jpg");
+  assert.deepEqual(requested.map((target) => target.searchParams.get("country")), ["KR", "US"]);
+  assert.equal(requested[0].searchParams.get("term"), "NewJeans Ditto");
 });
 
 test("requires a bearer token for the HTTP endpoint", async () => {

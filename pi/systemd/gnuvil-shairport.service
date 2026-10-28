@@ -1,0 +1,12 @@
+[Unit]
+Description=Gnuvil AirPlay receiver (shairport-sync)
+After=pipewire-pulse.service
+Wants=pipewire-pulse.service
+
+[Service]
+ExecStart=/usr/bin/shairport-sync -c %h/.config/gnuvil/shairport-sync.conf
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

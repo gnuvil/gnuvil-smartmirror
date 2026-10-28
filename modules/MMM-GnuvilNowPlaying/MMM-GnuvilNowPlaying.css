@@ -16,11 +16,11 @@
 }
 
 .gnuvil-now-playing-art {
-  border-radius: 6px;
-  flex: 0 0 72px;
-  height: 72px;
+  border-radius: 8px;
+  flex: 0 0 120px;
+  height: 120px;
   object-fit: cover;
-  width: 72px;
+  width: 120px;
 }
 
 .gnuvil-now-playing-details {

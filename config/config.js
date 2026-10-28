@@ -33,6 +33,16 @@ modules.push({
 });
 
 modules.push({
+  module: "MMM-GnuvilVisualizer",
+  position: "bottom_bar",
+  config: {
+    bars: 32,
+    framerate: 20,
+    height: 80
+  }
+});
+
+modules.push({
   module: "MMM-GnuvilNowPlaying",
   position: "bottom_bar",
   config: {

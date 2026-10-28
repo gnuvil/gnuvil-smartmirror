@@ -2,6 +2,10 @@
 
 Gnuvil 동아리방용 MagicMirror² 설정과 전용 모듈을 관리하는 저장소입니다. MagicMirror² 본체는 별도로 설치하며, 본체 소스는 수정하지 않습니다.
 
+## Raspberry Pi 음악 허브
+
+동아리방 Pi는 블루투스·AirPlay 수신기 역할도 합니다. 노트북이나 휴대폰을 `Gnuvil Mirror`에 연결하면 AUX 스피커로 소리가 나오고, 미러에 곡 정보·앨범아트·비주얼라이저가 표시됩니다. 새 Pi에서는 [Pi 설정 문서](pi/README.md)의 `pi/setup.sh` 하나로 MagicMirror, 모듈, 자동실행까지 설치합니다.
+
 ## 빠른 사용법
 
 1. MagicMirror²와 Node.js 24를 설치합니다. 아래 [설치 및 실행](#설치-및-실행)에 적힌 대로 이 저장소의 `config/config.js`, `css/custom.css`, 세 개의 전용 모듈 폴더를 MagicMirror 설치 폴더의 같은 위치에 복사합니다.
