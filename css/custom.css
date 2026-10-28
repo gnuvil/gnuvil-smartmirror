@@ -8,6 +8,12 @@
   --gap-body-right: 42px;
   --gap-body-bottom: 42px;
   --gap-body-left: 42px;
+  /* 실제 거울 틀에서 가운데로 보이도록 하단(비주얼라이저·Now Playing)을 옮기는 양. 음수면 왼쪽. */
+  --gnuvil-bottom-shift: 17px;
+}
+
+.region.bottom.bar {
+  transform: translateX(var(--gnuvil-bottom-shift));
 }
 
 .clock .time {

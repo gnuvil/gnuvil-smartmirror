@@ -16,6 +16,7 @@ const cases = [
     "아야츠노 유니 X 아이리 칸나", "점묘의 노래 (点描の唄)"],
   ["나라는 것 (Mrs. GREEN APPLE) / 아카네 리제 Cover", "아카네 리제 AKANE LIZE", "아카네 리제", "나라는 것 (Mrs. GREEN APPLE)"],
   ["Brand New - Mrs. GREEN APPLE ✧ Cover 이샤 ISHA", "이샤", "이샤", "Brand New"],
+  ["𝐫𝐚𝐲 (超かぐや姫！ 𝐕𝐞𝐫𝐬𝐢𝐨𝐧) ✧ 𝐂𝐨𝐯𝐞𝐫 𝐛𝐲 이샤 𝐈𝐒𝐇𝐀", "이샤", "이샤", "ray (超かぐや姫! Version)"],
   ["아이유 - 밤편지 (cover)", "어떤 커버 채널", "아이유", "밤편지 (cover)"],
   ["Shape of You (Official Music Video)", "Ed Sheeran", "Ed Sheeran", "Shape of You"],
   ["Don't Stop Me Now (Official Video)", "Queen Official", "Queen", "Don't Stop Me Now"],

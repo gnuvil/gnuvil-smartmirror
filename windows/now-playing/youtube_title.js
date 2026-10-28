@@ -10,6 +10,12 @@ const QUOTED = /(^|\s)[‘'"“「『]([^’'"”」』]+)[’'"”」』](?=\s|
 const DASH = /\s+[-–—_]\s+/;
 const SLASH = /\s+[/／]\s+/;
 const PIPE = /\s+[|｜]\s+/;
+const COVER_BY = /\s*[✧✦★☆♪◆・·\-–—/]?\s*cover\s+by\s+.*$/i;
+
+// 𝐫𝐚𝐲처럼 꾸밈용 유니코드 글자나 전각 문자로 쓴 제목을 보통 글자로 바꾼다.
+function normalize(value) {
+  return String(value || "").normalize("NFKC");
+}
 
 function isTag(text) {
   const value = text.trim();
@@ -17,7 +23,7 @@ function isTag(text) {
 }
 
 function cleanChannel(channel) {
-  return String(channel || "").trim()
+  return normalize(channel).trim()
     .replace(/\s*-\s*topic$/i, "")
     .replace(/\s*vevo$/i, "")
     .replace(/\s*(?:official\s*)?(?:youtube\s*)?channel$/i, "")
@@ -38,7 +44,7 @@ function trimSeparators(text) {
 
 function cleanYouTubeTitle(rawTitle, rawChannel) {
   const channel = cleanChannel(rawChannel);
-  let text = String(rawTitle || "").replace(/\s+/g, " ").trim();
+  let text = normalize(rawTitle).replace(/\s+/g, " ").trim();
   const original = text;
 
   // 맨 앞의 【아티스트】 꼬리표는 아티스트 후보로 남긴다.
@@ -49,7 +55,7 @@ function cleanYouTubeTitle(rawTitle, rawChannel) {
     text = text.slice(leading[0].length);
   }
   text = text.replace(BRACKETS, (whole, inner) => (isTag(inner) ? "" : whole)).trim();
-  text = text.split(PIPE)[0];
+  text = text.split(PIPE)[0].replace(COVER_BY, "");
   for (let previous = ""; previous !== text;) {
     previous = text;
     text = text.replace(TRAILING_TAG, "").trim();
