@@ -36,6 +36,19 @@ test("shows an idle message, then playing metadata and artwork, then the idle me
   assert.match(dom.text(), /Ditto.*NewJeans/);
   assert.equal(dom.children[0].tag, "img");
   assert.match(dom.children[1].children.at(-1).children[0].style.width, /^50/);
+  assert.equal(dom.children.length, 2);
+  instance.socketNotificationReceived("NOW_PLAYING_DATA", {
+    playing: true, title: "Ditto", artist: "NewJeans", caption: "널 보고 있어"
+  });
+  const captioned = instance.getDom();
+  assert.equal(captioned.children.at(-1).className, "gnuvil-now-playing-caption");
+  assert.equal(captioned.children.at(-1).textContent, "널 보고 있어");
+  // 같은 곡에서 자막이 잠시 없으면 빈 자막 줄로 자리를 지킨다. 곡이 바뀌면 없앤다.
+  instance.socketNotificationReceived("NOW_PLAYING_DATA", { playing: true, title: "Ditto", artist: "NewJeans" });
+  assert.equal(instance.getDom().children.at(-1).className, "gnuvil-now-playing-caption");
+  assert.equal(instance.getDom().children.at(-1).textContent, "");
+  instance.socketNotificationReceived("NOW_PLAYING_DATA", { playing: true, title: "Hype Boy", artist: "NewJeans" });
+  assert.notEqual(instance.getDom().children.at(-1).className, "gnuvil-now-playing-caption");
   instance.socketNotificationReceived("NOW_PLAYING_DATA", { playing: false });
   assert.match(instance.getDom().text(), /현재 재생 중인 음악이 없습니다/);
   instance.socketNotificationReceived("NOW_PLAYING_DATA", { playing: false, unavailable: true });

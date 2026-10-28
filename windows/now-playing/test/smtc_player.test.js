@@ -97,6 +97,20 @@ test("reports paused, empty and stale states as not playing", async () => {
   assert.deepEqual(await player.get(), { playing: false });
 });
 
+test("adds the YouTube caption for the playing browser video", async () => {
+  const seen = [];
+  const captions = { current: (title) => { seen.push(title); return "널 보고 있어"; } };
+  const child = fakeChild();
+  const player = new SmtcPlayer({ spawnImpl: () => child, now: () => 1_000_000, coverLookup: null, captions,
+    log: { error() {} }, setTimer: () => 1, clearTimer() {} });
+  player.start();
+  child.stdout.emit("data", `${JSON.stringify({ sessions: [edge()] })}\n`);
+  assert.equal((await player.get()).caption, "널 보고 있어");
+  assert.deepEqual(seen, ["NewJeans (뉴진스) 'Ditto' Official MV"]);
+  child.stdout.emit("data", `${JSON.stringify({ sessions: [{ ...edge(), app: "Spotify.exe" }] })}\n`);
+  assert.equal((await player.get()).caption, undefined);
+});
+
 test("does not clean titles from non-browser players", async () => {
   const { player, send } = setup();
   send([{ app: "Spotify.exe", status: "Playing", title: "Ditto", artist: "NewJeans", album: "OMG", position: 1, duration: 185, updatedAt: 1_000_000 }]);

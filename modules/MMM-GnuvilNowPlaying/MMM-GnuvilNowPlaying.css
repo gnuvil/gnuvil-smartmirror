@@ -2,6 +2,7 @@
   align-items: center;
   color: var(--color-text);
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
   margin: 0 auto;
   max-width: 600px;
@@ -24,8 +25,20 @@
 }
 
 .gnuvil-now-playing-details {
+  flex: 1 1 0;
   min-width: 0;
-  width: 100%;
+}
+
+/* 표지·재생바 아래 한 줄을 통째로 쓰는 자막. 두 줄이면 줄을 나눠 보여 준다. */
+.gnuvil-now-playing-caption {
+  color: var(--color-text-bright);
+  flex: 0 0 100%;
+  font-size: clamp(18px, 1.9vw, 24px);
+  line-height: 1.35;
+  min-height: 2.7em;
+  overflow: hidden;
+  text-align: center;
+  white-space: pre-line;
 }
 
 .gnuvil-now-playing-label {

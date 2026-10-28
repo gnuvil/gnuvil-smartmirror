@@ -4,6 +4,7 @@
 // 재생 정보만 playerctl 대신 Windows 미디어 세션(SMTC)에서 읽는다.
 const { createServer } = require("../../main-pc/now-playing-agent/server");
 const { SmtcPlayer } = require("./smtc_player");
+const { CaptionStore } = require("./caption_store");
 
 function start() {
   const bind = process.env.GNUVIL_NOW_PLAYING_BIND || "127.0.0.1";
@@ -13,9 +14,10 @@ function start() {
   if (!(["127.0.0.1", "::1", "localhost"].includes(bind)) && !token) {
     throw new Error("GNUVIL_NOW_PLAYING_TOKEN is required for non-loopback binding");
   }
-  const player = new SmtcPlayer();
+  const captions = new CaptionStore();
+  const player = new SmtcPlayer({ captions });
   player.start();
-  const server = createServer({ player, token });
+  const server = createServer({ player, token, extraRoute: (request, response) => captions.route(request, response) });
   server.listen(port, bind, () => console.log(`[gnuvil-now-playing] listening on ${bind}:${port}`));
   server.on("close", () => player.stop());
   return server;

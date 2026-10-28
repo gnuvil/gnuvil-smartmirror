@@ -24,6 +24,7 @@ Windows PC
 | `start-magicmirror.ps1` | 연결을 다시 맞추고, 미러 디스플레이 좌표를 읽어 MagicMirror를 그 화면에 전체화면으로 띄웁니다. |
 | `start-now-playing.ps1` | Now Playing API 시작 |
 | `install-autostart.ps1` | 로그온 시 두 시작 스크립트를 실행하는 작업 스케줄러 작업 등록 |
+| `edge-captions/` | YouTube에 보이는 자막을 Now Playing API로 보내는 Edge 확장 (아래 [YouTube 자막](#youtube-자막)) |
 
 ## 처음 설치
 
@@ -55,6 +56,21 @@ Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::AllS
 
 키가 없으면 미러에 `버스 API 키 필요`가 표시되고 요청은 보내지 않습니다. 같은 키를 쓰는 Raspberry Pi는 꺼 둡니다(하루 1,000회 한도, 이 PC 혼자 약 720회).
 
+### YouTube 자막
+
+YouTube 자막은 Windows 미디어 세션에 없으므로 Edge 확장이 플레이어에 **지금 보이는 자막 줄**을 읽어 `POST http://127.0.0.1:8765/caption`으로 보냅니다. 미러는 표지·재생바 아래에 최대 두 줄로 보여 줍니다.
+
+1. Edge 주소창에 `edge://extensions` 입력
+2. 왼쪽 아래 **개발자 모드** 켜기
+3. **압축을 푼 확장 로드** → `C:\gnuvil\gnuvil-smartmirror\windows\edge-captions` 폴더 선택
+4. 이미 열려 있던 YouTube 탭은 새로고침
+
+- YouTube 플레이어에서 **자막(CC)이 켜져 있어야** 합니다. 자동 생성·번역 자막도 보이는 그대로 나옵니다. 자막이 없는 영상은 자막 줄이 생기지 않습니다.
+- 확장은 **영상이 재생 중인 탭에서만** 보내고, 서버는 영상 제목이 미러에 보이는 곡과 같을 때만 붙입니다. 3초 동안 소식이 없으면 자막을 지웁니다.
+- 서버는 이 PC에서 온 JSON 요청 중 `X-Gnuvil-Caption: 1` 헤더가 있는 것만 받습니다. 일반 웹 페이지는 이 헤더를 붙여 보낼 수 없습니다(사전 요청에 응답하지 않음). 확장은 이 PC의 API 말고 다른 곳으로는 아무것도 보내지 않습니다.
+- 미러는 자막을 따라가도록 1초마다 API를 조회합니다(`config.js`의 `updateInterval: 1000`).
+- `git pull`로 확장이 바뀌었으면 `edge://extensions`에서 이 확장의 **다시 로드**를 누르고 YouTube 탭을 새로고침합니다.
+
 ## 실행과 확인
 
 ```powershell
@@ -83,6 +99,7 @@ curl.exe http://127.0.0.1:8765/now-playing
 |---|---|
 | 미러가 주 화면에 뜸 | `magicmirror.log`의 `미러 디스플레이 '...'를 찾지 못해` 경고. `GNUVIL_MIRROR_DISPLAY`와 연결된 화면 목록을 비교합니다. |
 | 곡 정보가 안 나옴 | `curl.exe http://127.0.0.1:8765/now-playing`. 503이면 `now-playing.log`에서 `SMTC reader is not built` 확인 후 `build-helpers.ps1`. 작업 표시줄 미디어 컨트롤(볼륨 팝업)에 곡이 안 보이면 브라우저가 SMTC에 올리지 않는 것입니다. |
+| 자막이 안 나옴 | YouTube에서 CC가 켜져 있는지, `edge://extensions`에서 확장이 켜져 있는지 확인하고 YouTube 탭을 새로고침합니다. `curl.exe http://127.0.0.1:8765/now-playing`에 `caption`이 있는지 봅니다. |
 | 막대가 안 움직임 | `magicmirror.log`의 `[MMM-GnuvilVisualizer]` 오류, 소리 설정의 기본 출력 장치 |
 | 버스 정보 없음 | `버스 API 키 필요`면 위 키 설정, 그 외에는 `magicmirror.log`의 `[MMM-GnuvilBus]` |
 

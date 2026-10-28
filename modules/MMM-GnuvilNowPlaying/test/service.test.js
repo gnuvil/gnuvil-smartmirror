@@ -12,6 +12,24 @@ test("accepts only a fixed now-playing endpoint and safe artwork", () => {
   assert.equal(normalize({ playing: false, title: "A" }).playing, false);
 });
 
+test("keeps up to two caption lines and polls as often as every second", () => {
+  assert.equal(normalize({ playing: true, title: "A", caption: " 하나 \n\n둘\n셋" }).caption, "하나\n둘");
+  assert.equal(normalize({ playing: true, title: "A", caption: "   " }).caption, undefined);
+  assert.equal(normalize({ playing: true, title: "A", caption: 3 }).caption, undefined);
+  const sent = [];
+  const service = new NowPlayingService({
+    fetchImpl: async () => new Promise(() => {}),
+    emit: (name, data) => sent.push(data),
+    readUrl: () => "http://127.0.0.1:8765/now-playing"
+  });
+  service.start(1000);
+  assert.notEqual(service.interval, null);
+  service.stop();
+  service.start(500);
+  assert.deepEqual(sent, [{ playing: false }]);
+  service.stop();
+});
+
 test("reads metadata and distinguishes a pause from a connection failure", async () => {
   let stage = 0;
   const sent = [];

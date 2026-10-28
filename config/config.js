@@ -41,7 +41,7 @@ modules.push({
   module: "MMM-GnuvilNowPlaying",
   position: "bottom_bar",
   config: {
-    updateInterval: 5000
+    updateInterval: 1000 // YouTube 자막을 따라가도록 1초마다 조회
   }
 });
 

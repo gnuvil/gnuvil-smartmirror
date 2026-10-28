@@ -29,6 +29,11 @@ function normalize(data) {
     position: number(data.position),
     duration: number(data.duration)
   };
+  // Windows 버전은 YouTube 자막이 있으면 caption으로 보낸다 (최대 두 줄).
+  const caption = typeof data.caption === "string"
+    ? data.caption.split("\n").map((line) => line.trim()).filter(Boolean).slice(0, 2).join("\n").slice(0, 300)
+    : "";
+  if (caption) result.caption = caption;
   if (typeof data.artData === "string"
     && /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(data.artData)
     && data.artData.length <= 360_000) {
@@ -70,7 +75,8 @@ class NowPlayingService {
   start(updateInterval = 5000) {
     this.stop();
     this.endpoint = endpointFromEnvironment(this.readUrl());
-    if (!this.endpoint || !Number.isInteger(updateInterval) || updateInterval < 3000) {
+    // 자막을 따라가려면 1초 간격까지 허용한다 (API는 같은 PC나 LAN에 있다).
+    if (!this.endpoint || !Number.isInteger(updateInterval) || updateInterval < 1000) {
       this.emit("NOW_PLAYING_DATA", { playing: false });
       return;
     }

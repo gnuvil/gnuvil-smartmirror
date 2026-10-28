@@ -34,7 +34,8 @@ function thumbnailData(base64) {
 class SmtcPlayer {
   constructor({ spawnImpl = spawn, command = process.env.GNUVIL_SMTC_READER || DEFAULT_COMMAND, now = Date.now,
     log = console, setTimer = setTimeout, clearTimer = clearTimeout,
-    coverLookup = undefined } = {}) {
+    coverLookup = undefined, captions = null } = {}) {
+    this.captions = captions;
     this.spawnImpl = spawnImpl;
     this.command = command;
     this.now = now;
@@ -163,13 +164,15 @@ class SmtcPlayer {
     const { artist, title } = browser ? cleanYouTubeTitle(rawTitle, rawArtist) : { artist: rawArtist, title: rawTitle };
     const thumbnail = this.thumbnails.get(`${session.app}\x1f${session.title}\x1f${session.artist}`);
     const art = this.covers.fallbackCover(artist, title) || (thumbnail ? { artData: thumbnail } : null);
+    const caption = browser && this.captions ? this.captions.current(session.title) : null;
     return {
       playing: true,
       title: clean(title),
       artist: clean(artist),
       album: clean(session.album),
       ...this.timeline(session),
-      ...(art || {})
+      ...(art || {}),
+      ...(caption ? { caption } : {})
     };
   }
 }

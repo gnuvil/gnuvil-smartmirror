@@ -12,10 +12,12 @@ function authorized(header, token) {
   return actual.length === expected.length && timingSafeEqual(actual, expected);
 }
 
-function createServer({ player = new PlayerState(), token = process.env.GNUVIL_NOW_PLAYING_TOKEN } = {}) {
+// extraRoute(request, response)가 true를 돌려주면 그 요청은 처리된 것으로 본다 (Windows 버전의 자막 수신용).
+function createServer({ player = new PlayerState(), token = process.env.GNUVIL_NOW_PLAYING_TOKEN, extraRoute = null } = {}) {
   return http.createServer(async (request, response) => {
     response.setHeader("Cache-Control", "no-store");
     response.setHeader("X-Content-Type-Options", "nosniff");
+    if (extraRoute && extraRoute(request, response)) return;
     if (request.method !== "GET" || request.url !== "/now-playing") {
       response.writeHead(404).end();
       return;

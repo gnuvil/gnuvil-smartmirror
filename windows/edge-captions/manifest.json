@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Gnuvil Mirror Captions",
+  "version": "0.1.0",
+  "description": "YouTube에서 보이는 자막을 이 PC의 Gnuvil 스마트미러(127.0.0.1:8765)로 보냅니다.",
+  "host_permissions": ["http://127.0.0.1:8765/*"],
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
