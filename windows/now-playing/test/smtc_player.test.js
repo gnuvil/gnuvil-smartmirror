@@ -16,14 +16,14 @@ function fakeChild() {
   return child;
 }
 
-function setup({ coverLookup = null } = {}) {
+function setup({ trackLookup = null } = {}) {
   let clock = 1_000_000;
   const child = fakeChild();
   const errors = [];
   const player = new SmtcPlayer({
     spawnImpl: () => child,
     now: () => clock,
-    coverLookup,
+    trackLookup,
     log: { error: (message) => errors.push(message) },
     setTimer: () => 1,
     clearTimer() {}
@@ -60,14 +60,33 @@ test("returns the cleaned title, extrapolated progress and thumbnail art", async
 
 test("prefers the iTunes cover over the YouTube thumbnail", async () => {
   const lookups = [];
-  const { player, send } = setup({ coverLookup: async (artist, title) => { lookups.push([artist, title]); return "https://example.com/cover.jpg"; } });
+  const { player, send } = setup({ trackLookup: async (candidates) => { lookups.push(candidates); return { index: 0, artUrl: "https://example.com/cover.jpg" }; } });
   send([edge({ thumbnail: PNG })]);
   assert.equal((await player.get()).artData, `data:image/png;base64,${PNG}`);
   await new Promise((resolve) => setImmediate(resolve));
   const data = await player.get();
   assert.equal(data.artUrl, "https://example.com/cover.jpg");
   assert.equal(data.artData, undefined);
-  assert.deepEqual(lookups, [["NewJeans", "Ditto"]]);
+  assert.deepEqual(lookups.map((candidates) => candidates.map(({ artist, title }) => [artist, title])), [[["NewJeans", "Ditto"]]]);
+});
+
+test("swaps title and artist when iTunes matches the reversed order", async () => {
+  const { player, send } = setup({ trackLookup: async () => ({ index: 1, artUrl: "https://example.com/lemon.jpg" }) });
+  send([edge({ title: "Lemon - Kenshi Yonezu", artist: "음악 모음" })]);
+  assert.deepEqual([(await player.get()).title, (await player.get()).artist], ["Kenshi Yonezu", "Lemon"]);
+  await new Promise((resolve) => setImmediate(resolve));
+  const data = await player.get();
+  assert.deepEqual([data.title, data.artist, data.artUrl], ["Lemon", "Kenshi Yonezu", "https://example.com/lemon.jpg"]);
+});
+
+test("uses the video thumbnail for covers without searching iTunes", async () => {
+  const lookups = [];
+  const { player, send } = setup({ trackLookup: async (candidates) => { lookups.push(candidates); return null; } });
+  send([edge({ title: "바다의 유령 (海の幽霊) - Kenshi Yonezu | 시라유키 히나 Cover", artist: "시라유키 히나 SHIRAYUKI HINA", thumbnail: PNG })]);
+  await new Promise((resolve) => setImmediate(resolve));
+  const data = await player.get();
+  assert.deepEqual([data.title, data.artist, data.artData], ["바다의 유령 (海の幽霊)", "시라유키 히나", `data:image/png;base64,${PNG}`]);
+  assert.equal(lookups.length, 0);
 });
 
 test("hides progress after a track change until the timeline is updated", async () => {
@@ -101,7 +120,7 @@ test("adds the YouTube caption for the playing browser video", async () => {
   const seen = [];
   const captions = { current: (title) => { seen.push(title); return "널 보고 있어"; } };
   const child = fakeChild();
-  const player = new SmtcPlayer({ spawnImpl: () => child, now: () => 1_000_000, coverLookup: null, captions,
+  const player = new SmtcPlayer({ spawnImpl: () => child, now: () => 1_000_000, trackLookup: null, captions,
     log: { error() {} }, setTimer: () => 1, clearTimer() {} });
   player.start();
   child.stdout.emit("data", `${JSON.stringify({ sessions: [edge()] })}\n`);

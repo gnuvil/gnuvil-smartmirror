@@ -2,8 +2,9 @@
 
 const { spawn } = require("node:child_process");
 const path = require("node:path");
-const { PlayerState, imageType } = require("../../main-pc/now-playing-agent/player_state");
-const { cleanYouTubeTitle } = require("./youtube_title");
+const { imageType } = require("../../main-pc/now-playing-agent/player_state");
+const { parseYouTubeTitle } = require("./youtube_title");
+const { lookupTrack } = require("./track_lookup");
 
 const DEFAULT_COMMAND = path.join(__dirname, "..", "bin", "GnuvilSmtcReader.exe");
 const RESTART_DELAY = 5000;
@@ -11,6 +12,9 @@ const RESTART_DELAY = 5000;
 const STALE_AFTER = 5000;
 // MMM-GnuvilNowPlaying의 artData 한도(360,000자)보다 조금 작게 둔다.
 const MAX_ART_DATA = 350_000;
+// 찾은 곡은 오래, 못 찾은 곡은 짧게 기억한다.
+const LOOKUP_CACHE_MS = 6 * 60 * 60 * 1000;
+const LOOKUP_RETRY_MS = 10 * 60 * 1000;
 const BROWSER = /^(msedge|chrome|firefox|brave|opera|whale|vivaldi)(\.exe)?$|Edge|Chrome|Firefox/i;
 
 function clean(value, maxLength = 240) {
@@ -34,7 +38,7 @@ function thumbnailData(base64) {
 class SmtcPlayer {
   constructor({ spawnImpl = spawn, command = process.env.GNUVIL_SMTC_READER || DEFAULT_COMMAND, now = Date.now,
     log = console, setTimer = setTimeout, clearTimer = clearTimeout,
-    coverLookup = undefined, captions = null } = {}) {
+    trackLookup = process.env.GNUVIL_COVER_LOOKUP === "off" ? null : lookupTrack, captions = null } = {}) {
     this.captions = captions;
     this.spawnImpl = spawnImpl;
     this.command = command;
@@ -42,8 +46,8 @@ class SmtcPlayer {
     this.log = log;
     this.setTimer = setTimer;
     this.clearTimer = clearTimer;
-    // iTunes 표지 검색과 캐시는 Linux 에이전트의 것을 그대로 쓴다.
-    this.covers = new PlayerState({ now, ...(coverLookup === undefined ? {} : { coverLookup }) });
+    this.trackLookup = trackLookup;
+    this.lookups = new Map();
     this.child = null;
     this.restartTimer = null;
     this.running = false;
@@ -151,6 +155,26 @@ class SmtcPlayer {
     };
   }
 
+  // iTunes 결과(실패 포함)를 곡마다 기억하고, 검색이 끝나기 전에는 기다리지 않고 제목 분석 결과만 쓴다.
+  lookup(parsed) {
+    if (!this.trackLookup || !parsed.title) return null;
+    const candidates = [parsed, parsed.alternate].filter(Boolean);
+    const cacheKey = candidates.map((candidate) => `${candidate.artist}\x1f${candidate.title}`).join("\x1e");
+    const cached = this.lookups.get(cacheKey);
+    if (cached && (cached.pending || this.now() < cached.expiresAt)) return cached.value;
+    const entry = { value: null, pending: true, expiresAt: 0 };
+    this.lookups.set(cacheKey, entry);
+    if (this.lookups.size > 50) this.lookups.delete(this.lookups.keys().next().value);
+    Promise.resolve()
+      .then(() => this.trackLookup(candidates))
+      .then((value) => { entry.value = value || null; }, () => { entry.value = null; })
+      .finally(() => {
+        entry.pending = false;
+        entry.expiresAt = this.now() + (entry.value ? LOOKUP_CACHE_MS : LOOKUP_RETRY_MS);
+      });
+    return null;
+  }
+
   async get() {
     if (this.now() - this.receivedAt > STALE_AFTER) {
       if (this.missing) throw new Error("SMTC reader is not built");
@@ -161,9 +185,12 @@ class SmtcPlayer {
     const rawTitle = clean(session.title);
     const rawArtist = clean(session.artist);
     const browser = BROWSER.test(session.app || "");
-    const { artist, title } = browser ? cleanYouTubeTitle(rawTitle, rawArtist) : { artist: rawArtist, title: rawTitle };
+    const parsed = browser ? parseYouTubeTitle(rawTitle, rawArtist) : { artist: rawArtist, title: rawTitle, cover: false, alternate: null };
     const thumbnail = this.thumbnails.get(`${session.app}\x1f${session.title}\x1f${session.artist}`);
-    const art = this.covers.fallbackCover(artist, title) || (thumbnail ? { artData: thumbnail } : null);
+    // 커버 영상은 원곡 표지가 아니라 영상 썸네일이 맞는 그림이다.
+    const found = parsed.cover ? null : this.lookup(parsed);
+    const { artist, title } = found?.index === 1 ? parsed.alternate : parsed;
+    const art = found ? { artUrl: found.artUrl } : thumbnail ? { artData: thumbnail } : null;
     const caption = browser && this.captions ? this.captions.current(session.title) : null;
     return {
       playing: true,

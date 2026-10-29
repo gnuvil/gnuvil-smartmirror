@@ -2,7 +2,7 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { cleanYouTubeTitle, cleanChannel } = require("../youtube_title");
+const { cleanYouTubeTitle, parseYouTubeTitle, cleanChannel } = require("../youtube_title");
 
 // 실제 YouTube 제목과 채널명 (이 PC의 SMTC 실측 포함)
 const cases = [
@@ -19,7 +19,10 @@ const cases = [
     "아오쿠모 린", "불가행력 [不可幸力 / Vaundy]"],
   ["나라는 것 (Mrs. GREEN APPLE) / 아카네 리제 Cover", "아카네 리제 AKANE LIZE", "아카네 리제", "나라는 것 (Mrs. GREEN APPLE)"],
   ["Brand New - Mrs. GREEN APPLE ✧ Cover 이샤 ISHA", "이샤", "이샤", "Brand New"],
+  ["바다의 유령 (海の幽霊) - Kenshi Yonezu | 시라유키 히나 Cover", "시라유키 히나 SHIRAYUKI HINA", "시라유키 히나", "바다의 유령 (海の幽霊)"],
   ["𝐫𝐚𝐲 (超かぐや姫！ 𝐕𝐞𝐫𝐬𝐢𝐨𝐧) ✧ 𝐂𝐨𝐯𝐞𝐫 𝐛𝐲 이샤 𝐈𝐒𝐇𝐀", "이샤", "이샤", "ray (超かぐや姫! Version)"],
+  ["밤새도록 널 생각해[夜もすがら君想ふ] - TOKOTOKOㅣ아라하시 타비 Cover", "아라하시 타비 ARAHASHI TABI",
+    "아라하시 타비", "밤새도록 널 생각해[夜もすがら君想ふ]"],
   ["아이유 - 밤편지 (cover)", "어떤 커버 채널", "아이유", "밤편지 (cover)"],
   ["Shape of You (Official Music Video)", "Ed Sheeran", "Ed Sheeran", "Shape of You"],
   ["Don't Stop Me Now (Official Video)", "Queen Official", "Queen", "Don't Stop Me Now"],
@@ -38,7 +41,18 @@ test("keeps the raw title when nothing is left after cleaning", () => {
   assert.deepEqual(cleanYouTubeTitle("Official MV", "Someone"), { artist: "Someone", title: "Official MV" });
 });
 
+test("marks covers and offers the reversed order when the dash order is a guess", () => {
+  const cover = parseYouTubeTitle("바다의 유령 (海の幽霊) - Kenshi Yonezu | 시라유키 히나 Cover", "시라유키 히나 SHIRAYUKI HINA");
+  assert.equal(cover.cover, true);
+  assert.equal(cover.alternate, null);
+  const plain = parseYouTubeTitle("Lemon - Kenshi Yonezu", "음악 모음");
+  assert.deepEqual([plain.cover, plain.alternate], [false, { artist: "Kenshi Yonezu", title: "Lemon" }]);
+  assert.equal(parseYouTubeTitle("BLACKPINK - 'Shut Down' M/V", "BLACKPINK").alternate, null);
+});
+
 test("cleans channel suffixes", () => {
+  assert.equal(cleanChannel("시라유키 히나 SHIRAYUKI HINA"), "시라유키 히나");
+  assert.equal(cleanChannel("Tani Yuuki"), "Tani Yuuki");
   assert.equal(cleanChannel("아이유 - Topic"), "아이유");
   assert.equal(cleanChannel("JYP Official YouTube Channel"), "JYP");
   assert.equal(cleanChannel(undefined), "");
