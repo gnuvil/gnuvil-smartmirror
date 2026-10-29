@@ -88,7 +88,10 @@ function parseYouTubeTitle(rawTitle, rawChannel) {
   const quoted = QUOTED.exec(text);
   const dashed = splitOutside(text, DASH);
   const slashed = splitOutside(text, SLASH);
-  if (quoted) {
+  // "곡명 - 원곡 가수 Cover 부른 사람"이면 앞쪽이 곡명이고 부른 사람은 채널이다.
+  const dashCover = dashed.length > 1 && Boolean(pipeCover || /\bcover\b/i.test(dashed.slice(1).join(" ").replace(BRACKETS, "")));
+  // 커버 영상의 "Lilac 「ライラック」"에서 따옴표 부분은 곡명의 다른 표기라 아티스트를 나누지 않는다.
+  if (quoted && !dashCover) {
     title = quoted[2];
     artist = trimSeparators(text.slice(0, quoted.index));
   } else if (dashed.length > 1 && splitOutside(dashed[0], SLASH).length > 1) {
@@ -99,9 +102,8 @@ function parseYouTubeTitle(rawTitle, rawChannel) {
   } else if (dashed.length > 1) {
     const [left, ...right] = dashed;
     const rest = right.join(" - ");
-    // "곡명 - 원곡 가수 Cover 부른 사람"이면 앞쪽이 곡명이고 부른 사람은 채널이다.
     const isChannel = (text) => channel && text.trim().toLowerCase() === channel.toLowerCase();
-    if (pipeCover || /\bcover\b/i.test(rest.replace(BRACKETS, ""))) {
+    if (dashCover) {
       title = left;
     } else if (isChannel(rest) && !isChannel(left)) {
       // "곡명 - 아티스트" 순서인 영상은 오른쪽이 채널명과 같다.

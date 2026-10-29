@@ -12,6 +12,11 @@ const path = require("node:path");
 const WINDOWS = path.join(__dirname, "..");
 const REPO = path.join(WINDOWS, "..");
 const BIN = path.join(WINDOWS, "bin");
+// 첫 화면을 불러오는 중에 Electron 네트워크 서비스가 죽으면 MagicMirror가 창을 끝내 보여 주지 않는다
+// (ready-to-show가 오지 않아 창이 숨겨진 채 남음). 시작 2분 안에 그 메시지가 나오면 Electron을 다시 띄운다.
+const STARTUP_MS = 120_000;
+const STARTUP_CRASH = /Network service crashed/;
+const MAX_RELAUNCHES = 5;
 
 function log(message) {
   console.log(`[${new Date().toISOString()}] [gnuvil] ${message}`);
@@ -73,6 +78,28 @@ function mirrorEnvironment(environment, { bounds, visualizer }) {
   return result;
 }
 
+function runElectron(start, { now = Date.now, setTimer = setTimeout, exit = process.exit,
+  stdout = process.stdout, stderr = process.stderr } = {}) {
+  let relaunches = 0;
+  const launch = () => {
+    const startedAt = now();
+    const child = start();
+    let relaunching = false;
+    const watch = (stream, output) => stream.on("data", (chunk) => {
+      output.write(chunk);
+      if (relaunching || relaunches >= MAX_RELAUNCHES || now() - startedAt > STARTUP_MS || !STARTUP_CRASH.test(String(chunk))) return;
+      relaunching = true;
+      relaunches += 1;
+      log(`화면을 띄우는 중에 Electron 네트워크 서비스가 멈춰 다시 시작합니다 (${relaunches}/${MAX_RELAUNCHES})`);
+      child.kill();
+    });
+    watch(child.stdout, stdout);
+    watch(child.stderr, stderr);
+    child.on("exit", (code) => (relaunching ? setTimer(launch, 3000) : exit(code ?? 1)));
+  };
+  launch();
+}
+
 function main() {
   const magicMirror = process.env.GNUVIL_MM_DIR || path.join(REPO, "..", "MagicMirror");
   if (!fs.existsSync(path.join(magicMirror, "js", "electron.js"))) {
@@ -87,10 +114,9 @@ function main() {
   const env = mirrorEnvironment(process.env, { bounds, visualizer: fs.existsSync(visualizer) ? visualizer : null });
   // electron 패키지는 실행 파일 경로를 내보낸다 (node --run start:windows와 같은 실행).
   const electron = require(path.join(magicMirror, "node_modules", "electron"));
-  const child = spawn(electron, ["js/electron.js"], { cwd: magicMirror, env, stdio: "inherit", windowsHide: false });
-  child.on("exit", (code) => process.exit(code ?? 1));
+  runElectron(() => spawn(electron, ["js/electron.js"], { cwd: magicMirror, env, stdio: ["ignore", "pipe", "pipe"], windowsHide: false }));
 }
 
 if (require.main === module) main();
 
-module.exports = { parseBounds, displayBounds, mirrorEnvironment };
+module.exports = { parseBounds, displayBounds, mirrorEnvironment, runElectron };

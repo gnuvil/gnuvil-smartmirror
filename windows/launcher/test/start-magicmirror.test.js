@@ -2,7 +2,8 @@
 
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const { parseBounds, displayBounds, mirrorEnvironment } = require("../start-magicmirror");
+const { EventEmitter } = require("node:events");
+const { parseBounds, displayBounds, mirrorEnvironment, runElectron } = require("../start-magicmirror");
 
 test("parses display bounds from the helper", () => {
   assert.equal(parseBounds("1920,0,1024,1280\r\n"), "1920,0,1024,1280");
@@ -34,4 +35,35 @@ test("passes bounds, the API address and the visualizer helper without overridin
   assert.equal(kept.GNUVIL_MIRROR_BOUNDS, undefined);
   assert.equal(kept.GNUVIL_NOW_PLAYING_URL, "http://other/now-playing");
   assert.equal(kept.GNUVIL_VISUALIZER_COMMAND, "cava");
+});
+
+function fakeElectron() {
+  const child = new EventEmitter();
+  child.stdout = new EventEmitter();
+  child.stderr = new EventEmitter();
+  child.kill = () => child.emit("exit", null);
+  return child;
+}
+
+test("relaunches Electron when its network service crashes during startup only", () => {
+  let clock = 0;
+  const children = [];
+  const exits = [];
+  const sink = { write() {} };
+  const original = console.log;
+  console.log = () => {};
+  try {
+    runElectron(() => { const child = fakeElectron(); children.push(child); return child; }, {
+      now: () => clock, setTimer: (callback) => callback(), exit: (code) => exits.push(code), stdout: sink, stderr: sink
+    });
+    children[0].stderr.emit("data", "[9600:ERROR] Network service crashed or was terminated, restarting service.\n");
+    assert.equal(children.length, 2);
+    clock = 200_000;
+    children[1].stderr.emit("data", "Network service crashed or was terminated, restarting service.\n");
+    assert.equal(children.length, 2);
+    children[1].emit("exit", 3);
+    assert.deepEqual(exits, [3]);
+  } finally {
+    console.log = original;
+  }
 });

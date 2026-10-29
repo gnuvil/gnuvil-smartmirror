@@ -23,6 +23,8 @@ const cases = [
   ["𝐫𝐚𝐲 (超かぐや姫！ 𝐕𝐞𝐫𝐬𝐢𝐨𝐧) ✧ 𝐂𝐨𝐯𝐞𝐫 𝐛𝐲 이샤 𝐈𝐒𝐇𝐀", "이샤", "이샤", "ray (超かぐや姫! Version)"],
   ["밤새도록 널 생각해[夜もすがら君想ふ] - TOKOTOKOㅣ아라하시 타비 Cover", "아라하시 타비 ARAHASHI TABI",
     "아라하시 타비", "밤새도록 널 생각해[夜もすがら君想ふ]"],
+  ["Lilac 「ライラック」 (Mrs. GREEN APPLE) - 아야츠노 유니 Cover", "아야츠노 유니 AYATSUNO YUNI",
+    "아야츠노 유니", "Lilac 「ライラック」 (Mrs. GREEN APPLE)"],
   ["아이유 - 밤편지 (cover)", "어떤 커버 채널", "아이유", "밤편지 (cover)"],
   ["Shape of You (Official Music Video)", "Ed Sheeran", "Ed Sheeran", "Shape of You"],
   ["Don't Stop Me Now (Official Video)", "Queen Official", "Queen", "Don't Stop Me Now"],
