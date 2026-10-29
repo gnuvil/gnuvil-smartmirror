@@ -42,6 +42,19 @@ function trimSeparators(text) {
   return text.replace(/^[\s\-–—_:：|｜/]+|[\s\-–—_:：|｜/]+$/g, "").trim();
 }
 
+// 괄호 밖에 있는 구분자에서만 나눈다. "곡명 [원제 / 원곡 가수] / 부른 사람"의 괄호 안 '/'는 구분자가 아니다.
+function splitOutside(text, separator) {
+  const masked = text.replace(/[(\[【]([^)\]】]*)[)\]】]/g, (whole) => "\u0000".repeat(whole.length));
+  const parts = [];
+  let start = 0;
+  for (const match of masked.matchAll(new RegExp(separator.source, "g"))) {
+    parts.push(text.slice(start, match.index));
+    start = match.index + match[0].length;
+  }
+  parts.push(text.slice(start));
+  return parts;
+}
+
 function cleanYouTubeTitle(rawTitle, rawChannel) {
   const channel = cleanChannel(rawChannel);
   let text = normalize(rawTitle).replace(/\s+/g, " ").trim();
@@ -55,7 +68,7 @@ function cleanYouTubeTitle(rawTitle, rawChannel) {
     text = text.slice(leading[0].length);
   }
   text = text.replace(BRACKETS, (whole, inner) => (isTag(inner) ? "" : whole)).trim();
-  text = text.split(PIPE)[0].replace(COVER_BY, "");
+  text = splitOutside(text, PIPE)[0].replace(COVER_BY, "");
   for (let previous = ""; previous !== text;) {
     previous = text;
     text = text.replace(TRAILING_TAG, "").trim();
@@ -64,16 +77,18 @@ function cleanYouTubeTitle(rawTitle, rawChannel) {
   let artist = "";
   let title = text;
   const quoted = QUOTED.exec(text);
+  const dashed = splitOutside(text, DASH);
+  const slashed = splitOutside(text, SLASH);
   if (quoted) {
     title = quoted[2];
     artist = trimSeparators(text.slice(0, quoted.index));
-  } else if (DASH.test(text) && SLASH.test(text.split(DASH)[0])) {
+  } else if (dashed.length > 1 && splitOutside(dashed[0], SLASH).length > 1) {
     // "곡명 / 아티스트 - English Title / Artist"처럼 두 언어를 이어 붙인 제목은 앞쪽만 쓴다.
-    const [left, ...right] = text.split(DASH)[0].split(SLASH);
+    const [left, ...right] = splitOutside(dashed[0], SLASH);
     title = left;
     artist = right.join(" / ");
-  } else if (DASH.test(text)) {
-    const [left, ...right] = text.split(DASH);
+  } else if (dashed.length > 1) {
+    const [left, ...right] = dashed;
     const rest = right.join(" - ");
     // "곡명 - 원곡 가수 Cover 부른 사람"이면 앞쪽이 곡명이고 부른 사람은 채널이다.
     const isChannel = (text) => channel && text.trim().toLowerCase() === channel.toLowerCase();
@@ -87,14 +102,14 @@ function cleanYouTubeTitle(rawTitle, rawChannel) {
       artist = left;
       title = rest;
     }
-  } else if (SLASH.test(text)) {
+  } else if (slashed.length > 1) {
     // "곡명 / 아티스트"는 일본 곡에서 흔하다. 커버 영상은 "/ 부른 사람 Cover"로 쓴다.
-    const [left, ...right] = text.split(SLASH);
+    const [left, ...right] = slashed;
     title = left;
     artist = right.join(" / ").replace(/\s*cover$/i, "");
   }
   artist = stripAlias(trimSeparators(artist || hint || channel));
-  title = trimSeparators(title) || original;
+  title = trimSeparators(title).replace(/([(\[【])\s+/g, "$1").replace(/\s+([)\]】])/g, "$1") || original;
   return { artist: artist || channel, title };
 }
 

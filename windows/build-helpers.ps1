@@ -11,7 +11,8 @@ New-Item -ItemType Directory -Force $out | Out-Null
 $targets = @(
   @{ Name = 'GnuvilSmtcReader.exe'; Source = 'SmtcReader.cs'
      References = @("$winmd\Windows.Foundation.winmd", "$winmd\Windows.Media.winmd", "$winmd\Windows.Storage.winmd", $facade, 'System.Web.Extensions.dll') },
-  @{ Name = 'GnuvilLoopbackBars.exe'; Source = 'LoopbackBars.cs'; References = @() }
+  @{ Name = 'GnuvilLoopbackBars.exe'; Source = 'LoopbackBars.cs'; References = @() },
+  @{ Name = 'GnuvilDisplayBounds.exe'; Source = 'DisplayBounds.cs'; References = @('System.Windows.Forms.dll', 'System.Drawing.dll') }
 )
 foreach ($target in $targets) {
   $source = Join-Path $PSScriptRoot "helpers\$($target.Source)"

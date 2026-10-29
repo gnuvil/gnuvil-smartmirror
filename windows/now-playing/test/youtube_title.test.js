@@ -15,6 +15,8 @@ const cases = [
   ["青のすみか / キタニタツヤ - Where Our Blue Is / Tatsuya Kitani", "キタニタツヤ / Tatsuya Kitani", "キタニタツヤ", "青のすみか"],
   ["【아야츠노 유니 X 아이리 칸나】 점묘의 노래 (点描の唄) | Cover", "아야츠노 유니 AYATSUNO YUNI",
     "아야츠노 유니 X 아이리 칸나", "점묘의 노래 (点描の唄)"],
+  ["불가행력 [不可幸力 / Vaundy ] / 아오쿠모 린 (Aokumo Rin) Cover", "아오쿠모 린 AOKUMO RIN",
+    "아오쿠모 린", "불가행력 [不可幸力 / Vaundy]"],
   ["나라는 것 (Mrs. GREEN APPLE) / 아카네 리제 Cover", "아카네 리제 AKANE LIZE", "아카네 리제", "나라는 것 (Mrs. GREEN APPLE)"],
   ["Brand New - Mrs. GREEN APPLE ✧ Cover 이샤 ISHA", "이샤", "이샤", "Brand New"],
   ["𝐫𝐚𝐲 (超かぐや姫！ 𝐕𝐞𝐫𝐬𝐢𝐨𝐧) ✧ 𝐂𝐨𝐯𝐞𝐫 𝐛𝐲 이샤 𝐈𝐒𝐇𝐀", "이샤", "이샤", "ray (超かぐや姫! Version)"],

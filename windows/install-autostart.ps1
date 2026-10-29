@@ -1,4 +1,5 @@
-﻿# 로그온할 때 Now Playing API와 MagicMirror가 시작되도록 현재 사용자 작업 스케줄러에 등록한다.
+﻿# 로그온할 때 Now Playing API와 MagicMirror가 시작되도록 현재 사용자 작업 스케줄러에 등록하고,
+# 문서 폴더에 "Gnuvil 스마트미러" 바로가기 폴더(켜기·끄기·다시 시작·로그)와 사용 설명서를 만든다.
 # 관리자 권한은 필요 없다. 지우려면 -Remove를 붙여 실행한다.
 #   powershell -ExecutionPolicy Bypass -File windows\install-autostart.ps1 -MirrorDisplay 2
 param(
@@ -7,9 +8,11 @@ param(
 )
 $ErrorActionPreference = 'Stop'
 $names = @('Gnuvil Now Playing', 'Gnuvil MagicMirror')
+$shortcuts = Join-Path ([Environment]::GetFolderPath('MyDocuments')) 'Gnuvil 스마트미러'
 if ($Remove) {
   foreach ($name in $names) { Unregister-ScheduledTask -TaskName $name -Confirm:$false -ErrorAction SilentlyContinue }
-  Write-Output '[gnuvil] 자동 실행 작업을 지웠습니다.'
+  Remove-Item -Recurse -Force $shortcuts -ErrorAction SilentlyContinue
+  Write-Output '[gnuvil] 자동 실행 작업과 문서 폴더의 바로가기를 지웠습니다.'
   return
 }
 if (-not $MirrorDisplay) { $MirrorDisplay = [Environment]::GetEnvironmentVariable('GNUVIL_MIRROR_DISPLAY', 'User') }
@@ -24,18 +27,49 @@ $principal = New-ScheduledTaskPrincipal -UserId $user -LogonType Interactive -Ru
 $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries -StartWhenAvailable `
   -ExecutionTimeLimit ([TimeSpan]::Zero) -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -MultipleInstances IgnoreNew
 
+# 부팅 직후 PowerShell은 이 PC(HDD)에서 시작에 몇 분 걸리므로, 작업은 wscript로 .cmd를 창 없이 실행한다.
 $tasks = @(
-  @{ Name = $names[0]; Script = 'start-now-playing.ps1'; Delay = 'PT5S' },
+  @{ Name = $names[0]; Script = 'start-now-playing.cmd'; Delay = 'PT5S' },
   # 화면 배치와 네트워크가 준비되도록 MagicMirror는 조금 늦게 띄운다.
-  @{ Name = $names[1]; Script = 'start-magicmirror.ps1'; Delay = 'PT20S' }
+  @{ Name = $names[1]; Script = 'start-magicmirror.cmd'; Delay = 'PT20S' }
 )
+$runner = Join-Path $PSScriptRoot 'run-hidden.vbs'
 foreach ($task in $tasks) {
   $trigger = New-ScheduledTaskTrigger -AtLogOn -User $user
   $trigger.Delay = $task.Delay
   $script = Join-Path $PSScriptRoot $task.Script
-  $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
-    -Argument "-NoProfile -WindowStyle Hidden -ExecutionPolicy Bypass -File `"$script`"" -WorkingDirectory $PSScriptRoot
+  $action = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument "//B //NoLogo `"$runner`" `"$script`"" -WorkingDirectory $PSScriptRoot
   Register-ScheduledTask -TaskName $task.Name -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Force | Out-Null
   Write-Output "[gnuvil] 등록: $($task.Name)"
 }
-Write-Output "[gnuvil] 다음 로그온부터 자동으로 시작합니다. 지금 시작하려면: Start-ScheduledTask -TaskName '$($names[0])'; Start-ScheduledTask -TaskName '$($names[1])'"
+
+# 문서 폴더의 바로가기와 사용 설명서
+New-Item -ItemType Directory -Force $shortcuts | Out-Null
+$shell = New-Object -ComObject WScript.Shell
+$control = Join-Path $PSScriptRoot 'mirror-control.ps1'
+$links = @(
+  @{ Name = '스마트미러 다시 시작'; Action = 'restart'; Icon = 238 },
+  @{ Name = '스마트미러 켜기'; Action = 'start'; Icon = 137 },
+  @{ Name = '스마트미러 끄기'; Action = 'stop'; Icon = 27 }
+)
+foreach ($link in $links) {
+  $shortcut = $shell.CreateShortcut((Join-Path $shortcuts "$($link.Name).lnk"))
+  $shortcut.TargetPath = 'powershell.exe'
+  $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$control`" $($link.Action)"
+  $shortcut.WorkingDirectory = $PSScriptRoot
+  $shortcut.WindowStyle = 7
+  $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,$($link.Icon)"
+  $shortcut.Description = $link.Name
+  $shortcut.Save()
+}
+$logs = Join-Path $env:LOCALAPPDATA 'gnuvil\logs'
+New-Item -ItemType Directory -Force $logs | Out-Null
+$shortcut = $shell.CreateShortcut((Join-Path $shortcuts '로그 폴더.lnk'))
+$shortcut.TargetPath = $logs
+$shortcut.Save()
+$shortcut = $shell.CreateShortcut((Join-Path $shortcuts '스마트미러 프로그램 폴더.lnk'))
+$shortcut.TargetPath = Split-Path $PSScriptRoot -Parent
+$shortcut.Save()
+Copy-Item (Join-Path $PSScriptRoot 'USER_GUIDE.md') (Join-Path $shortcuts 'Gnuvil 스마트미러 사용 설명서.md') -Force
+Write-Output "[gnuvil] 바로가기와 사용 설명서: $shortcuts"
+Write-Output '[gnuvil] 다음 로그온부터 자동으로 시작합니다. 지금 시작하려면 바로가기의 "스마트미러 켜기"를 실행하세요.'

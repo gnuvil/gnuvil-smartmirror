@@ -19,11 +19,14 @@ Windows PC
 | `now-playing/` | Windows용 Now Playing API. HTTP 서버는 `main-pc/now-playing-agent`의 것을 그대로 쓰고, 재생 정보만 SMTC에서 읽습니다. YouTube 제목 정리(`youtube_title.js`)와 iTunes 표지 검색(KR→US) → 실패 시 YouTube 썸네일 순으로 앨범아트를 정합니다. |
 | `helpers/SmtcReader.cs` | SMTC를 1초마다 읽어 JSON 한 줄로 내보내는 도우미 |
 | `helpers/LoopbackBars.cs` | 기본 출력 장치 소리를 루프백으로 캡처해 cava와 같은 `0;12;55;...;` 형식으로 내보내는 도우미 |
-| `build-helpers.ps1` | 위 두 도우미를 Windows 기본 .NET Framework 컴파일러(`csc.exe`)로 `windows/bin`에 빌드합니다. Visual Studio·SDK 불필요, exe는 Git에 넣지 않습니다. |
-| `link-magicmirror.ps1` | 레포의 `config`, `css/custom.css`, `MMM-Gnuvil*` 모듈을 MagicMirror 설치 폴더에 연결 (정션·하드링크, 관리자 권한 불필요) |
-| `start-magicmirror.ps1` | 연결을 다시 맞추고, 미러 디스플레이 좌표를 읽어 MagicMirror를 그 화면에 전체화면으로 띄웁니다. |
-| `start-now-playing.ps1` | Now Playing API 시작 |
-| `install-autostart.ps1` | 로그온 시 두 시작 스크립트를 실행하는 작업 스케줄러 작업 등록 |
+| `helpers/DisplayBounds.cs` | 디스플레이 번호를 받아 그 화면 좌표(`x,y,너비,높이`)를 출력하는 도우미 |
+| `build-helpers.ps1` | 위 도우미들을 Windows 기본 .NET Framework 컴파일러(`csc.exe`)로 `windows/bin`에 빌드합니다. Visual Studio·SDK 불필요, exe는 Git에 넣지 않습니다. |
+| `launcher/start-magicmirror.js` | 레포의 `config`, `css/custom.css`, `MMM-Gnuvil*` 모듈을 MagicMirror 설치 폴더에 연결하고(정션·하드링크, 관리자 권한 불필요), 미러 디스플레이 좌표를 읽어 MagicMirror(Electron)를 그 화면에 전체화면으로 띄웁니다. |
+| `start-magicmirror.cmd`, `start-now-playing.cmd` | 로그를 남기며 위 스크립트와 Now Playing API를 실행 |
+| `run-hidden.vbs` | `.cmd`를 창 없이 실행하고 끝날 때까지 기다림 (작업 스케줄러가 사용) |
+| `install-autostart.ps1` | 로그온 시 두 `.cmd`를 실행하는 작업 스케줄러 작업 등록, 문서 폴더에 바로가기·사용 설명서 생성 |
+| `mirror-control.ps1` | 손으로 켜기·끄기·다시 시작 (`start`/`stop`/`restart`, 바로가기가 사용) |
+| `USER_GUIDE.md` | 동아리원용 사용 설명서. 설치 스크립트가 문서 폴더에 복사합니다. |
 | `edge-captions/` | YouTube에 보이는 자막을 Now Playing API로 보내는 Edge 확장 (아래 [YouTube 자막](#youtube-자막)) |
 
 ## 처음 설치
@@ -73,15 +76,18 @@ YouTube 자막은 Windows 미디어 세션에 없으므로 Edge 확장이 플레
 
 ## 실행과 확인
 
+문서 폴더의 **Gnuvil 스마트미러** 바로가기(켜기·끄기·다시 시작·로그 폴더)를 쓰거나 직접 실행합니다.
+
 ```powershell
-Start-ScheduledTask -TaskName 'Gnuvil Now Playing'
-Start-ScheduledTask -TaskName 'Gnuvil MagicMirror'
+powershell -ExecutionPolicy Bypass -File windows\mirror-control.ps1 restart
 curl.exe http://127.0.0.1:8765/now-playing
 ```
 
-로그는 `%LOCALAPPDATA%\gnuvil\logs\now-playing.log`, `magicmirror.log`에 쌓입니다. 작업이 끝나면 작업 스케줄러가 1분 뒤 다시 시작합니다. 자동 실행을 지우려면 `install-autostart.ps1 -Remove`를 실행합니다.
+로그는 `%LOCALAPPDATA%\gnuvil\logs\now-playing.log`, `magicmirror.log`에 쌓입니다. 작업이 끝나면 작업 스케줄러가 1분 뒤 다시 시작합니다. 자동 실행과 바로가기를 지우려면 `install-autostart.ps1 -Remove`를 실행합니다.
 
-레포를 `git pull`로 갱신한 뒤에는 MagicMirror 작업을 다시 시작합니다(시작 스크립트가 `custom.css` 하드링크를 다시 만듭니다). 도우미 소스(`helpers/*.cs`)가 바뀌었으면 두 작업을 멈추고 `build-helpers.ps1`을 실행합니다. 실행 중인 exe는 덮어쓸 수 없습니다.
+**로그온 경로에 PowerShell을 쓰지 않는 이유**: 이 PC는 HDD라 부팅 직후 PowerShell 엔진이 준비되는 데 4분 반이 걸렸습니다(이벤트 로그 실측: 작업 시작 09:30:36 → 엔진 준비 09:35:12). 그래서 작업 스케줄러는 `wscript`로 `.cmd`를 창 없이 실행하고, 실제 일은 Node와 작은 C# 도우미가 합니다. PowerShell 스크립트는 설치·빌드·수동 제어에만 씁니다.
+
+레포를 `git pull`로 갱신한 뒤에는 **다시 시작**합니다(시작 스크립트가 `custom.css` 하드링크를 다시 만듭니다). 도우미 소스(`helpers/*.cs`)가 바뀌었으면 **끄기** → `build-helpers.ps1` → **켜기** 순서로 합니다. 실행 중인 exe는 덮어쓸 수 없습니다.
 
 ## 동작 방식과 실측 결과
 
@@ -97,7 +103,8 @@ curl.exe http://127.0.0.1:8765/now-playing
 
 | 증상 | 확인 |
 |---|---|
-| 미러가 주 화면에 뜸 | `magicmirror.log`의 `미러 디스플레이 '...'를 찾지 못해` 경고. `GNUVIL_MIRROR_DISPLAY`와 연결된 화면 목록을 비교합니다. |
+| 로그인 후 한참 안 뜸 | 부팅 직후 1~2분은 정상입니다. 작업 스케줄러에서 두 작업의 "마지막 실행 시간"과 `magicmirror.log`의 시각을 비교합니다. |
+| 미러가 주 화면에 뜸 | `magicmirror.log`의 `미러 디스플레이 '...'를 찾지 못해` 메시지. `GNUVIL_MIRROR_DISPLAY`와 연결된 화면 목록을 비교합니다. |
 | 곡 정보가 안 나옴 | `curl.exe http://127.0.0.1:8765/now-playing`. 503이면 `now-playing.log`에서 `SMTC reader is not built` 확인 후 `build-helpers.ps1`. 작업 표시줄 미디어 컨트롤(볼륨 팝업)에 곡이 안 보이면 브라우저가 SMTC에 올리지 않는 것입니다. |
 | 자막이 안 나옴 | YouTube에서 CC가 켜져 있는지, `edge://extensions`에서 확장이 켜져 있는지 확인하고 YouTube 탭을 새로고침합니다. `curl.exe http://127.0.0.1:8765/now-playing`에 `caption`이 있는지 봅니다. |
 | 막대가 안 움직임 | `magicmirror.log`의 `[MMM-GnuvilVisualizer]` 오류, 소리 설정의 기본 출력 장치 |
@@ -107,4 +114,5 @@ curl.exe http://127.0.0.1:8765/now-playing
 
 ```powershell
 cd windows\now-playing; node --test test/*.test.js
+cd ..\launcher; node --test test/*.test.js
 ```
