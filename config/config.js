@@ -16,10 +16,13 @@ modules.push({
   module: "MMM-GnuvilBus",
   position: "top_right",
   config: {
-    stationId: "228001371", // 외국어대학교(29561), 정류소 조회 API 응답으로 확인
-    stationMobileNo: "29561", // 외국어대학교, 외국어대학교기숙사 방면
+    // 외대.모현빌라(29555), 서울 방면. GBIS 통합검색 응답으로 확인 (2026-10-29).
+    // 학교 안 외국어대학교(29561)는 1005·1117·1150·1303의 출발지라 출발 전 도착 시간이 비어 1500-2만 보였다.
+    stationId: "228000346",
+    stationMobileNo: "29555",
     routes: null, // 이 정류장의 모든 노선을 표시
     walkMinutes: null,
+    subtractMinutes: 5, // 동아리방에서 정류장까지 걷는 시간만큼 빼서 "출발까지 남은 시간"으로 보여 준다
     updateInterval: 120000,
     staleAfter: 300000
   }
@@ -32,7 +35,7 @@ modules.push({
   position: "bottom_bar",
   config: {
     bars: 32,
-    framerate: 20,
+    framerate: 30, // Windows PC 기준. Raspberry Pi 3B에서는 20 권장
     height: 80
   }
 });

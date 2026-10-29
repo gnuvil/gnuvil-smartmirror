@@ -51,8 +51,17 @@ public static class LoopbackBars {
   const int StreamFlagsLoopback = 0x00020000;
   const uint BufferFlagsSilent = 0x2;
   const double MinFrequency = 50, MaxFrequency = 16000;
-  // 이 범위(dB)를 막대 높이 0-100에 대응시킨다. 실제 YouTube 음악으로 맞춘 값이다.
-  const double FloorDb = -70, RangeDb = 50;
+  // 곡의 가장 큰 소리(자동 이득)를 꼭대기로, 그보다 RangeDb 아래를 바닥으로 잡는다.
+  // 범위가 좁을수록 막대 높낮이 차이가 커진다. 실제 YouTube 음악으로 맞춘 값이다.
+  const double RangeDb = 32;
+  // 이보다 작은 소리는 0으로 보고, 조용한 곡도 이 이상으로 키우지는 않는다 (잡음이 막대로 올라오지 않게).
+  const double SilenceDb = -80, MinPeakDb = -42;
+  // 자동 이득의 꼭대기가 내려오는 속도(dB/초). 느릴수록 큰 소리 뒤의 작은 소리가 작게 보인다.
+  const double PeakDecayDbPerSecond = 4;
+  // 높이를 이 지수로 휘어 큰 소리는 더 높게, 작은 소리는 더 낮게 보이게 한다.
+  const double Contrast = 1.6;
+  // 막대가 꼭대기에서 바닥까지 떨어지는 시간(초). 가속하며 떨어진다.
+  const double FallSeconds = 0.2;
   static readonly Guid FloatSubFormat = new Guid("00000003-0000-0010-8000-00aa00389b71");
 
   static void Check(int hr, string step) {
@@ -151,7 +160,12 @@ public static class LoopbackBars {
     var output = new StreamWriter(Console.OpenStandardOutput(), new UTF8Encoding(false)) { AutoFlush = false, NewLine = "\n" };
     var line = new StringBuilder();
     int frameMs = 1000 / framerate, samplesPerFrame = sampleRate / framerate;
-    double fall = 100.0 / framerate * 2.5;
+    // n프레임 동안 가속해 100만큼 떨어지려면 매 프레임 속도를 이만큼 늘린다.
+    double fallFrames = Math.Max(1, FallSeconds * framerate);
+    double gravity = 100 / (fallFrames * (fallFrames + 1) / 2);
+    var fallSpeed = new double[bars];
+    var decibels = new double[bars];
+    double gainPeak = MinPeakDb;
     var clock = Stopwatch.StartNew();
     long nextFrame = frameMs;
 
@@ -188,14 +202,30 @@ public static class LoopbackBars {
 
       for (int i = 0; i < FftSize; i++) { re[i] = ring[(ringPosition + i) % FftSize] * window[i]; im[i] = 0; }
       Fft(re, im);
-      line.Length = 0;
+      double loudest = double.NegativeInfinity;
       for (int b = 0; b < bars; b++) {
         double peak = 0;
         for (int k = lowBin[b]; k <= highBin[b]; k++) peak = Math.Max(peak, Math.Sqrt(re[k] * re[k] + im[k] * im[k]));
         double amplitude = peak * 2 / windowSum;
-        double target = amplitude <= 0 ? 0 : (20 * Math.Log10(amplitude) + weightDb[b] - FloorDb) / RangeDb * 100;
-        target = Math.Max(0, Math.Min(100, target));
-        levels[b] = Math.Max(target, levels[b] - fall);
+        decibels[b] = amplitude <= 0 ? double.NegativeInfinity : 20 * Math.Log10(amplitude) + weightDb[b];
+        loudest = Math.Max(loudest, decibels[b]);
+      }
+      // 자동 이득: 큰 소리가 오면 바로 따라 올라가고, 조용해지면 천천히 내려온다.
+      gainPeak = Math.Max(MinPeakDb, Math.Max(loudest, gainPeak - PeakDecayDbPerSecond / framerate));
+      line.Length = 0;
+      for (int b = 0; b < bars; b++) {
+        double target = 0;
+        if (decibels[b] > SilenceDb) {
+          double position = Math.Max(0, Math.Min(1, (decibels[b] - (gainPeak - RangeDb)) / RangeDb));
+          target = Math.Pow(position, Contrast) * 100;
+        }
+        if (target >= levels[b]) {
+          levels[b] = target;
+          fallSpeed[b] = 0;
+        } else {
+          fallSpeed[b] += gravity;
+          levels[b] = Math.Max(target, levels[b] - fallSpeed[b]);
+        }
         if (levels[b] < 1) levels[b] = 0;
         line.Append((int)Math.Round(levels[b])).Append(';');
       }

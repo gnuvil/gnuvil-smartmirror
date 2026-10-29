@@ -103,6 +103,23 @@ test("shows destination for each direction and an empty status", () => {
   assert.match(instance.getDom().text(), /현재 도착 정보 없음/);
 });
 
+test("subtracts the walk time and skips buses that can no longer be caught", () => {
+  const { instance } = moduleInstance({ subtractMinutes: 5 });
+  instance.socketNotificationReceived("BUS_DATA", { updatedAt: 1000, stale: false, routes: [
+    { routeName: "1303", first: { minutes: 12 }, second: { minutes: 40 } },
+    { routeName: "1150", first: { minutes: 3 }, second: { minutes: 20 } },
+    { routeName: "1500-2", first: { minutes: 2 }, second: null },
+    { routeName: "1117", first: { seconds: 300 }, second: null }
+  ] });
+  const text = instance.getDom().text();
+  assert.match(text, /1303 7분 · 35분/);
+  assert.match(text, /1150 15분/);
+  assert.doesNotMatch(text, /1500-2/);
+  assert.match(text, /1117 지금 출발/);
+  const order = instance.getDom().children.at(-1).children.map((row) => row.children[0].text().trim());
+  assert.deepEqual(order, ["1117", "1303", "1150"]);
+});
+
 test("counts down between API responses without sending another request", () => {
   const { instance, sent } = moduleInstance();
   instance.socketNotificationReceived("BUS_DATA", { updatedAt: 1000, stale: false, routes: [

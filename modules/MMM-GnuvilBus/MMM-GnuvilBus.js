@@ -4,6 +4,8 @@ Module.register("MMM-GnuvilBus", {
     stationMobileNo: null,
     routes: null,
     walkMinutes: null,
+    // 도착 예정 시간에서 이만큼(분) 빼서 표시한다. 그 시간 안에 못 타는 버스는 다음 버스로 넘긴다.
+    subtractMinutes: 0,
     updateInterval: 120000,
     staleAfter: 300000
   },
@@ -48,7 +50,13 @@ Module.register("MMM-GnuvilBus", {
       ? arrival.seconds
       : Number.isFinite(arrival?.minutes) && arrival.minutes >= 0
         ? arrival.minutes * 60 : null;
-    return predicted === null ? null : Math.max(0, predicted - this.elapsedSeconds());
+    if (predicted === null) return null;
+    const subtract = Number.isFinite(this.config.subtractMinutes) && this.config.subtractMinutes > 0
+      ? this.config.subtractMinutes * 60 : 0;
+    const remaining = predicted - this.elapsedSeconds() - subtract;
+    // 빼고 나서 음수면 지금 나가도 못 타는 버스다. 빼지 않을 때는 기존처럼 0(곧 도착)으로 둔다.
+    if (subtract && remaining < 0) return null;
+    return Math.max(0, remaining);
   },
 
   soonestSeconds(route) {
@@ -140,7 +148,8 @@ Module.register("MMM-GnuvilBus", {
       const second = first === route.first && this.waitSeconds(route.second) !== null ? route.second : null;
       const firstMinutes = Math.ceil(this.waitSeconds(first) / 60);
       const secondMinutes = second && Math.ceil(this.waitSeconds(second) / 60);
-      const formatArrival = (minutes) => minutes === 0 ? "곧 도착" : `${minutes}분`;
+      const subtracting = Number.isFinite(this.config.subtractMinutes) && this.config.subtractMinutes > 0;
+      const formatArrival = (minutes) => minutes === 0 ? (subtracting ? "지금 출발" : "곧 도착") : `${minutes}분`;
       const arrival = document.createElement("span");
       arrival.className = "gnuvil-bus-arrival";
       arrival.textContent = secondMinutes == null
