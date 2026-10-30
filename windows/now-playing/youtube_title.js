@@ -7,7 +7,8 @@
 // 제목 형식이 제각각이라 흔한 형식만 처리하고, 모르는 형식은 제목은 그대로 두고 채널명을 아티스트로 쓴다.
 // 순서를 확신할 수 없으면 alternate(반대 순서)와 search(iTunes로 확인할 후보)를 함께 돌려준다.
 
-const TAG = /^(?:official\s*)?(?:music\s*video|m\/?v|video|audio|lyrics?(?:\s*video)?|visuali[sz]er|performance\s*video|special\s*video|live\s*clip|color\s*coded\s*lyrics.*|가사|4k|hd|hq|official)$/i;
+// 가사·번역 채널의 [가사/발음/해석], 【歌詞/和訳】 같은 꼬리표도 곡명이 아니다.
+const TAG = /^(?:official\s*)?(?:music\s*video|m\/?v|video|audio|lyrics?(?:\s*video)?|visuali[sz]er|performance\s*video|special\s*video|live\s*clip|color\s*coded\s*lyrics.*|4k|hd|hq|official|가사|발음|해석|번역|자막|한글\s*자막|한국어\s*(?:자막|번역)|가사\s*해석|한글\s*가사|歌詞|和訳|日本語字幕|romaji|(?:eng(?:lish)?|kor(?:ean)?)\s*sub(?:title)?s?|sub(?:title)?s?|translation|해석\s*포함)$/i;
 const TRAILING_TAG = /[\s\-–—:：|｜]*(?:official\s*)?(?:music\s*video|m\/v|mv|lyrics?\s*video|lyrics|audio|video|visuali[sz]er)\s*$/i;
 const BRACKETS = /\s*[(\[【（]([^)\]】）]*)[)\]】）]/g;
 const QUOTED = /(^|\s)[‘'"“「『]([^’'"”」』]+)[’'"”」』](?=\s|$)/;
@@ -29,7 +30,7 @@ function normalize(value) {
 
 function isTag(text) {
   const value = text.trim();
-  return TAG.test(value) || value.split(/\s*[/,·&]\s*/).every((part) => part && TAG.test(part));
+  return TAG.test(value) || value.split(/\s*[/,·&+]\s*|\s+/).every((part) => part && TAG.test(part));
 }
 
 // "시라유키 히나 SHIRAYUKI HINA"처럼 로마자 표기를 덧붙인 이름은 앞부분만 쓴다.

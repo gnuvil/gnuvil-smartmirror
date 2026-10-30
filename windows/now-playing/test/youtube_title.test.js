@@ -30,7 +30,10 @@ const cases = [
   ["Don't Stop Me Now (Official Video)", "Queen Official", "Queen", "Don't Stop Me Now"],
   ["Blinding Lights", "The Weeknd - Topic", "The Weeknd", "Blinding Lights"],
   ["Anti-Hero", "TaylorSwiftVEVO", "TaylorSwift", "Anti-Hero"],
-  ["Hype Boy [4K]", "NewJeans", "NewJeans", "Hype Boy"]
+  ["Hype Boy [4K]", "NewJeans", "NewJeans", "Hype Boy"],
+  ["요네즈 켄시 - 감전(感電) [가사/발음/해석]", "지구의 가사집 [J-POP]", "요네즈 켄시", "감전(感電)"],
+  ["YOASOBI - 밤을 달리다 (가사 발음 해석)", "가사 채널", "YOASOBI", "밤을 달리다"],
+  ["夜に駆ける 【歌詞/和訳】", "YOASOBI", "YOASOBI", "夜に駆ける"]
 ];
 
 for (const [title, channel, artist, song] of cases) {
