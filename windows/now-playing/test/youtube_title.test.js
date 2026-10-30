@@ -25,7 +25,7 @@ const cases = [
     "아라하시 타비", "밤새도록 널 생각해[夜もすがら君想ふ]"],
   ["Lilac 「ライラック」 (Mrs. GREEN APPLE) - 아야츠노 유니 Cover", "아야츠노 유니 AYATSUNO YUNI",
     "아야츠노 유니", "Lilac 「ライラック」 (Mrs. GREEN APPLE)"],
-  ["아이유 - 밤편지 (cover)", "어떤 커버 채널", "아이유", "밤편지 (cover)"],
+  ["Stellar Stellar - [星街すいせい] ㅣ아카네 리제(Akane Lize) 【COVER】", "아카네 리제 AKANE LIZE", "아카네 리제", "Stellar Stellar"],
   ["Shape of You (Official Music Video)", "Ed Sheeran", "Ed Sheeran", "Shape of You"],
   ["Don't Stop Me Now (Official Video)", "Queen Official", "Queen", "Don't Stop Me Now"],
   ["Blinding Lights", "The Weeknd - Topic", "The Weeknd", "Blinding Lights"],
@@ -46,7 +46,12 @@ test("keeps the raw title when nothing is left after cleaning", () => {
 test("marks covers and offers the reversed order when the dash order is a guess", () => {
   const cover = parseYouTubeTitle("바다의 유령 (海の幽霊) - Kenshi Yonezu | 시라유키 히나 Cover", "시라유키 히나 SHIRAYUKI HINA");
   assert.equal(cover.cover, true);
-  assert.equal(cover.alternate, null);
+  // 커버도 원곡 가수와 곡명 순서는 iTunes로 확인하고, 아티스트는 부른 사람으로 둔다.
+  assert.deepEqual(cover.search, [{ artist: "Kenshi Yonezu", title: "바다의 유령 (海の幽霊)" }, { artist: "바다의 유령 (海の幽霊)", title: "Kenshi Yonezu" }]);
+  assert.deepEqual(cover.alternate, { artist: "시라유키 히나", title: "Kenshi Yonezu" });
+  const reversed = parseYouTubeTitle("아이유 - 밤편지 (cover)", "어떤 커버 채널");
+  assert.deepEqual([reversed.cover, reversed.artist, reversed.alternate.title], [true, "어떤 커버 채널", "밤편지"]);
+  assert.deepEqual(parseYouTubeTitle("점묘의 노래 | Cover", "채널").search, []);
   const plain = parseYouTubeTitle("Lemon - Kenshi Yonezu", "음악 모음");
   assert.deepEqual([plain.cover, plain.alternate], [false, { artist: "Kenshi Yonezu", title: "Lemon" }]);
   assert.equal(parseYouTubeTitle("BLACKPINK - 'Shut Down' M/V", "BLACKPINK").alternate, null);

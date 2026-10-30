@@ -156,9 +156,8 @@ class SmtcPlayer {
   }
 
   // iTunes 결과(실패 포함)를 곡마다 기억하고, 검색이 끝나기 전에는 기다리지 않고 제목 분석 결과만 쓴다.
-  lookup(parsed) {
-    if (!this.trackLookup || !parsed.title) return null;
-    const candidates = [parsed, parsed.alternate].filter(Boolean);
+  lookup(candidates) {
+    if (!this.trackLookup || !candidates?.length || !candidates[0].title) return null;
     const cacheKey = candidates.map((candidate) => `${candidate.artist}\x1f${candidate.title}`).join("\x1e");
     const cached = this.lookups.get(cacheKey);
     if (cached && (cached.pending || this.now() < cached.expiresAt)) return cached.value;
@@ -185,12 +184,13 @@ class SmtcPlayer {
     const rawTitle = clean(session.title);
     const rawArtist = clean(session.artist);
     const browser = BROWSER.test(session.app || "");
-    const parsed = browser ? parseYouTubeTitle(rawTitle, rawArtist) : { artist: rawArtist, title: rawTitle, cover: false, alternate: null };
+    const parsed = browser ? parseYouTubeTitle(rawTitle, rawArtist)
+      : { artist: rawArtist, title: rawTitle, cover: false, alternate: null, search: [{ artist: rawArtist, title: rawTitle }] };
     const thumbnail = this.thumbnails.get(`${session.app}\x1f${session.title}\x1f${session.artist}`);
-    // 커버 영상은 원곡 표지가 아니라 영상 썸네일이 맞는 그림이다.
-    const found = parsed.cover ? null : this.lookup(parsed);
-    const { artist, title } = found?.index === 1 ? parsed.alternate : parsed;
-    const art = found ? { artUrl: found.artUrl } : thumbnail ? { artData: thumbnail } : null;
+    // 커버 영상도 곡명 순서는 원곡으로 확인하지만, 그림은 원곡 표지가 아니라 영상 썸네일이 맞다.
+    const found = this.lookup(parsed.search);
+    const { artist, title } = found?.index === 1 && parsed.alternate ? parsed.alternate : parsed;
+    const art = found && !parsed.cover ? { artUrl: found.artUrl } : thumbnail ? { artData: thumbnail } : null;
     const caption = browser && this.captions ? this.captions.current(session.title) : null;
     return {
       playing: true,

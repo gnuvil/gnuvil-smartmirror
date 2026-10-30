@@ -79,14 +79,23 @@ test("swaps title and artist when iTunes matches the reversed order", async () =
   assert.deepEqual([data.title, data.artist, data.artUrl], ["Lemon", "Kenshi Yonezu", "https://example.com/lemon.jpg"]);
 });
 
-test("uses the video thumbnail for covers without searching iTunes", async () => {
+test("uses the video thumbnail for covers even when iTunes finds the original", async () => {
   const lookups = [];
-  const { player, send } = setup({ trackLookup: async (candidates) => { lookups.push(candidates); return null; } });
+  const { player, send } = setup({ trackLookup: async (candidates) => { lookups.push(candidates); return { index: 0, artUrl: "https://example.com/original.jpg" }; } });
   send([edge({ title: "바다의 유령 (海の幽霊) - Kenshi Yonezu | 시라유키 히나 Cover", artist: "시라유키 히나 SHIRAYUKI HINA", thumbnail: PNG })]);
   await new Promise((resolve) => setImmediate(resolve));
   const data = await player.get();
   assert.deepEqual([data.title, data.artist, data.artData], ["바다의 유령 (海の幽霊)", "시라유키 히나", `data:image/png;base64,${PNG}`]);
-  assert.equal(lookups.length, 0);
+  assert.equal(lookups.length, 1);
+});
+
+test("fixes the song order of a cover from iTunes and keeps the performer", async () => {
+  const { player, send } = setup({ trackLookup: async () => ({ index: 1, artUrl: "https://example.com/original.jpg" }) });
+  send([edge({ title: "아이유 - 밤편지 (cover)", artist: "노래하는 사람", thumbnail: PNG })]);
+  await player.get();
+  await new Promise((resolve) => setImmediate(resolve));
+  const data = await player.get();
+  assert.deepEqual([data.title, data.artist, data.artData], ["밤편지", "노래하는 사람", `data:image/png;base64,${PNG}`]);
 });
 
 test("hides progress after a track change until the timeline is updated", async () => {

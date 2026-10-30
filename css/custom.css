@@ -44,6 +44,11 @@
   transform: translateX(var(--gnuvil-bottom-shift));
 }
 
+/* 비주얼라이저 막대와 곡 정보 사이를 좁힌다 (막대 아래 여백 16px + 모듈 간격 → 16px + 12px). */
+.region.bottom .module.MMM-GnuvilNowPlaying {
+  margin-top: 12px;
+}
+
 .clock .time {
   --clock-time-size: clamp(96px, 12vw, 180px);
   align-items: center;
