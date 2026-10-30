@@ -137,8 +137,16 @@
   padding: 0;
 }
 
+/* 시간별(16:00)과 날짜별(10/31 토) 표의 첫 칸 폭을 같게 해서 기호가 한 줄로 맞게 한다. */
 .module.weather.gnuvil-forecast .day {
   padding-right: 14px;
+  white-space: nowrap;
+  width: 4.6em;
+}
+
+/* 시간별 예보 바로 아래에 내일·모레를 붙인다. */
+.module.weather.gnuvil-forecast.gnuvil-forecast-days {
+  margin-top: calc(4px - var(--gap-modules));
 }
 
 .module.weather.gnuvil-forecast .weather-icon {

@@ -77,17 +77,36 @@ if (
       onlyTemp: true
     }
   });
-  // 온도 아래에 며칠치 예보를 날씨 기호와 최고·최저 기온으로 보여 준다. 같은 Open-Meteo를 쓰므로 키가 필요 없다.
+  // 온도 아래 예보: 지금부터 1시간 단위 3칸, 이어서 내일·모레를 날짜와 최고·최저 기온으로 보여 준다.
+  // 같은 Open-Meteo를 쓰므로 키가 필요 없다.
   modules.push({
     module: "weather",
     position: "top_left",
     classes: "gnuvil-forecast",
     config: {
       weatherProvider: "openmeteo",
+      type: "hourly",
+      lat: latitude,
+      lon: longitude,
+      maxEntries: 3,
+      hourlyForecastIncrements: 1,
+      appendLocationNameToHeader: false,
+      fade: false,
+      tableClass: "small"
+    }
+  });
+  modules.push({
+    module: "weather",
+    position: "top_left",
+    classes: "gnuvil-forecast gnuvil-forecast-days",
+    config: {
+      weatherProvider: "openmeteo",
       type: "forecast",
       lat: latitude,
       lon: longitude,
-      maxNumberOfDays: 5,
+      ignoreToday: true,
+      maxNumberOfDays: 2,
+      forecastDateFormat: "M/D ddd",
       appendLocationNameToHeader: false,
       fade: false,
       tableClass: "small"
