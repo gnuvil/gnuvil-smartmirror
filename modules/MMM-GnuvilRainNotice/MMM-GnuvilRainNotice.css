@@ -1,0 +1,6 @@
+/* 온도 바로 위, 예전 지역명 자리에 놓이는 한 줄 안내 */
+.gnuvil-rain-notice {
+  color: var(--color-text-bright);
+  font-size: 18px;
+  line-height: 1.2;
+}

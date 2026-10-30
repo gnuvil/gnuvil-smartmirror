@@ -3,14 +3,17 @@ const clock = {
   position: "top_left",
   header: "GNUVIL Smart Mirror",
   config: {
-    timeFormat: 24,
+    timeFormat: 12,
+    showPeriod: true,
+    showPeriodUpper: true, // AM/PM, 시는 03처럼 두 자리 (MMM-GnuvilTimeFormat)
     displaySeconds: false,
     timezone: "Asia/Seoul",
     dateFormat: "M월 D일 dddd"
   }
 };
 
-const modules = [clock];
+// 화면에 그리는 것 없이 12시간제 표기를 고친다 (오전/오후 → AM/PM, 시계의 시 3 → 03). 시계보다 앞에 둔다.
+const modules = [{ module: "MMM-GnuvilTimeFormat" }, clock];
 
 modules.push({
   module: "MMM-GnuvilBus",
@@ -65,7 +68,16 @@ if (
   longitude >= -180 &&
   longitude <= 180
 ) {
-  // 시계 바로 아래에 둔다 (같은 top_left에서 시계 다음 순서).
+  // 온도 바로 위, 예전 "용인시, KR-41" 자리에 오늘 비(눈) 예보가 있을 때만 안내 문구를 띄운다.
+  modules.push({
+    module: "MMM-GnuvilRainNotice",
+    position: "top_left",
+    config: {
+      lat: latitude,
+      lon: longitude
+    }
+  });
+  // 시계 바로 아래에 둔다 (같은 top_left에서 시계 다음 순서). 지역명 머리글은 비 안내로 대신한다.
   modules.push({
     module: "weather",
     position: "top_left",
@@ -74,7 +86,8 @@ if (
       type: "current",
       lat: latitude,
       lon: longitude,
-      onlyTemp: true
+      onlyTemp: true,
+      appendLocationNameToHeader: false
     }
   });
   // 온도 아래 예보: 지금부터 1시간 단위 3칸, 이어서 내일·모레를 날짜와 최고·최저 기온으로 보여 준다.
@@ -90,6 +103,9 @@ if (
       lon: longitude,
       maxEntries: 3,
       hourlyForecastIncrements: 1,
+      timeFormat: 12,
+      showPeriod: true,
+      showPeriodUpper: true,
       appendLocationNameToHeader: false,
       fade: false,
       tableClass: "small"

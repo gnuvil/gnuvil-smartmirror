@@ -10,8 +10,8 @@
   --gap-body-left: 42px;
   /* 실제 거울 틀에서 가운데로 보이도록 하단(비주얼라이저·Now Playing)을 옮기는 양. 음수면 왼쪽. */
   --gnuvil-bottom-shift: 17px;
-  /* 버스 영역이 왼쪽으로 넓어지지 않고 남겨 둘 폭(시계 + 간격). 시계는 tabular-nums라 폭이 일정하다. */
-  --gnuvil-clock-reserve: 380px;
+  /* 버스 영역이 왼쪽으로 넓어지지 않고 남겨 둘 폭(시계 + AM/PM + 간격). 시계는 tabular-nums에 시도 두 자리라 폭이 일정하다. */
+  --gnuvil-clock-reserve: 420px;
 }
 
 /* 버스 영역을 시계 옆까지 넓힌다. 행선지가 덜 잘리도록 한다. */
@@ -63,6 +63,18 @@
   line-height: 0.95;
 }
 
+/* 12시간제의 AM/PM: 분 숫자 오른쪽, 숫자 아랫선에 맞춰 작게 붙인다 (clock 모듈이 class 없는 span으로 넣는다). */
+.clock .time > span:not([class]) {
+  align-self: flex-end;
+  color: var(--color-text);
+  font-size: 24px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  margin-bottom: 0.3em;
+  margin-left: 12px;
+}
+
 .clock .clock-hour-digital,
 .clock .clock-minute-digital {
   font-size: var(--clock-time-size);
@@ -101,7 +113,8 @@
   font-weight: 400;
   letter-spacing: 0.025em;
   line-height: 1.3;
-  margin-top: 20px;
+  /* 시계 숫자와 날짜 줄의 글꼴 여백만큼 당겨 붙인다. */
+  margin-top: -8px;
 }
 
 .weather {
@@ -114,6 +127,19 @@
   border-bottom: none;
   padding-bottom: 0;
   margin-bottom: 0;
+}
+
+/* 비 안내는 온도 바로 위 한 줄. 비 소식이 없으면 자리를 차지하지 않는다. */
+.module.MMM-GnuvilRainNotice {
+  margin-bottom: 0;
+}
+
+.module.MMM-GnuvilRainNotice:has(.gnuvil-rain-notice.empty) {
+  display: none;
+}
+
+.module.MMM-GnuvilRainNotice:has(.gnuvil-rain-notice:not(.empty)) + .module.weather {
+  margin-top: 4px;
 }
 
 /* 현재 날씨: 기호와 온도를 세로 가운데로 맞춘다. */
@@ -155,7 +181,7 @@
 .module.weather.gnuvil-forecast .day {
   padding-right: 12px;
   white-space: nowrap;
-  width: 84px;
+  width: 96px;
 }
 
 .module.weather.gnuvil-forecast .weather-icon {
