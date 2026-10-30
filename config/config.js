@@ -77,6 +77,22 @@ if (
       onlyTemp: true
     }
   });
+  // 온도 아래에 며칠치 예보를 날씨 기호와 최고·최저 기온으로 보여 준다. 같은 Open-Meteo를 쓰므로 키가 필요 없다.
+  modules.push({
+    module: "weather",
+    position: "top_left",
+    classes: "gnuvil-forecast",
+    config: {
+      weatherProvider: "openmeteo",
+      type: "forecast",
+      lat: latitude,
+      lon: longitude,
+      maxNumberOfDays: 5,
+      appendLocationNameToHeader: false,
+      fade: false,
+      tableClass: "small"
+    }
+  });
 }
 
 const config = {

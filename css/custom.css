@@ -116,6 +116,46 @@
   margin-bottom: 0;
 }
 
+/* 온도 바로 아래의 날씨 예보 (요일 · 기호 · 최고 · 최저).
+   weather 모듈의 기본 CSS가 나중에 읽히므로 .module.weather까지 붙여 우선한다. */
+.module.weather.gnuvil-forecast {
+  margin-top: calc(12px - var(--gap-modules));
+}
+
+.module.weather.gnuvil-forecast table {
+  border-spacing: 0;
+  font-size: 20px;
+  line-height: 1.5;
+  width: auto;
+}
+
+.module.weather.gnuvil-forecast .weathericon {
+  font-size: 1.15em;
+}
+
+.module.weather.gnuvil-forecast td {
+  padding: 0;
+}
+
+.module.weather.gnuvil-forecast .day {
+  padding-right: 14px;
+}
+
+.module.weather.gnuvil-forecast .weather-icon {
+  padding-right: 14px;
+  text-align: center;
+  width: 1.4em;
+}
+
+.module.weather.gnuvil-forecast .max-temp {
+  padding-right: 12px;
+}
+
+.module.weather.gnuvil-forecast .min-temp {
+  color: var(--color-text);
+  opacity: 0.6;
+}
+
 @media (max-width: 900px) {
   :root {
     --gap-body-top: 28px;
