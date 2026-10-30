@@ -116,46 +116,63 @@
   margin-bottom: 0;
 }
 
-/* 온도 바로 아래의 날씨 예보 (요일 · 기호 · 최고 · 최저).
-   weather 모듈의 기본 CSS가 나중에 읽히므로 .module.weather까지 붙여 우선한다. */
+/* 현재 날씨: 기호와 온도를 세로 가운데로 맞춘다. */
+.module.weather:not(.gnuvil-forecast) .type-temp {
+  align-items: center;
+  display: flex;
+}
+
+.module.weather:not(.gnuvil-forecast) .type-temp .weathericon {
+  display: inline-block;
+  line-height: 1;
+}
+
+/* 온도 바로 아래의 날씨 예보 (시간별 3칸 + 내일·모레).
+   weather 모듈의 기본 CSS가 나중에 읽히므로 .module.weather까지 붙여 우선한다.
+   두 표의 줄 높이와 칸 폭을 같게 하고 표 사이 간격을 없애 다섯 줄이 같은 간격으로 놓이게 한다. */
 .module.weather.gnuvil-forecast {
-  margin-top: calc(12px - var(--gap-modules));
+  --gnuvil-forecast-row: 34px;
+  margin-top: calc(10px - var(--gap-modules));
+}
+
+.module.weather.gnuvil-forecast.gnuvil-forecast-days {
+  margin-top: calc(0px - var(--gap-modules));
 }
 
 .module.weather.gnuvil-forecast table {
   border-spacing: 0;
   font-size: 20px;
-  line-height: 1.5;
+  line-height: 1;
   width: auto;
 }
 
-.module.weather.gnuvil-forecast .weathericon {
-  font-size: 1.15em;
-}
-
 .module.weather.gnuvil-forecast td {
+  height: var(--gnuvil-forecast-row);
   padding: 0;
+  vertical-align: middle;
 }
 
-/* 시간별(16:00)과 날짜별(10/31 토) 표의 첫 칸 폭을 같게 해서 기호가 한 줄로 맞게 한다. */
 .module.weather.gnuvil-forecast .day {
-  padding-right: 14px;
+  padding-right: 12px;
   white-space: nowrap;
-  width: 4.6em;
-}
-
-/* 시간별 예보 바로 아래에 내일·모레를 붙인다. */
-.module.weather.gnuvil-forecast.gnuvil-forecast-days {
-  margin-top: calc(4px - var(--gap-modules));
+  width: 84px;
 }
 
 .module.weather.gnuvil-forecast .weather-icon {
-  padding-right: 14px;
+  padding-right: 12px;
   text-align: center;
-  width: 1.4em;
+  width: 32px;
 }
 
-.module.weather.gnuvil-forecast .max-temp {
+.module.weather.gnuvil-forecast .weathericon {
+  display: inline-block;
+  font-size: 22px;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+/* 시간별 표의 온도 칸과 날짜별 표의 최고 기온 칸 */
+.module.weather.gnuvil-forecast td:nth-child(3) {
   padding-right: 12px;
 }
 
