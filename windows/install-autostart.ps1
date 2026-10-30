@@ -46,7 +46,8 @@ foreach ($task in $tasks) {
 # 문서 폴더의 바로가기와 사용 설명서
 New-Item -ItemType Directory -Force $shortcuts | Out-Null
 $shell = New-Object -ComObject WScript.Shell
-$control = Join-Path $PSScriptRoot 'mirror-control.ps1'
+# 바로가기도 PowerShell 대신 .cmd를 실행한다 (부팅 직후 PowerShell이 몇 분 걸려 눌러도 안 켜지는 것처럼 보였음).
+$control = Join-Path $PSScriptRoot 'mirror-control.cmd'
 $links = @(
   @{ Name = '스마트미러 다시 시작'; Action = 'restart'; Icon = 238 },
   @{ Name = '스마트미러 켜기'; Action = 'start'; Icon = 137 },
@@ -54,8 +55,8 @@ $links = @(
 )
 foreach ($link in $links) {
   $shortcut = $shell.CreateShortcut((Join-Path $shortcuts "$($link.Name).lnk"))
-  $shortcut.TargetPath = 'powershell.exe'
-  $shortcut.Arguments = "-NoProfile -ExecutionPolicy Bypass -File `"$control`" $($link.Action)"
+  $shortcut.TargetPath = $control
+  $shortcut.Arguments = $link.Action
   $shortcut.WorkingDirectory = $PSScriptRoot
   $shortcut.WindowStyle = 7
   $shortcut.IconLocation = "$env:SystemRoot\System32\shell32.dll,$($link.Icon)"

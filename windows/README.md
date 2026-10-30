@@ -25,7 +25,7 @@ Windows PC
 | `start-magicmirror.cmd`, `start-now-playing.cmd` | 로그를 남기며 위 스크립트와 Now Playing API를 실행 |
 | `run-hidden.vbs` | `.cmd`를 창 없이 실행하고 끝날 때까지 기다림 (작업 스케줄러가 사용) |
 | `install-autostart.ps1` | 로그온 시 두 `.cmd`를 실행하는 작업 스케줄러 작업 등록, 문서 폴더에 바로가기·사용 설명서 생성 |
-| `mirror-control.ps1` | 손으로 켜기·끄기·다시 시작 (`start`/`stop`/`restart`, 바로가기가 사용) |
+| `mirror-control.cmd` | 손으로 켜기·끄기·다시 시작 (`start`/`stop`/`restart`, 바로가기가 사용). 부팅 직후에도 바로 실행되도록 PowerShell 없이 cmd·schtasks·wmic만 씁니다. `start`도 남아 있는 프로세스를 정리하고 다시 띄웁니다. |
 | `USER_GUIDE.md` | 동아리원용 사용 설명서. 설치 스크립트가 문서 폴더에 복사합니다. |
 | `edge-captions/` | YouTube에 보이는 자막을 Now Playing API로 보내는 Edge 확장 (아래 [YouTube 자막](#youtube-자막)) |
 
@@ -79,7 +79,7 @@ YouTube 자막은 Windows 미디어 세션에 없으므로 Edge 확장이 플레
 문서 폴더의 **Gnuvil 스마트미러** 바로가기(켜기·끄기·다시 시작·로그 폴더)를 쓰거나 직접 실행합니다.
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File windows\mirror-control.ps1 restart
+windows\mirror-control.cmd restart
 curl.exe http://127.0.0.1:8765/now-playing
 ```
 
@@ -104,7 +104,7 @@ curl.exe http://127.0.0.1:8765/now-playing
 
 | 증상 | 확인 |
 |---|---|
-| 로그인 후 한참 안 뜸 | 부팅 직후 1~2분은 정상입니다. 작업 스케줄러에서 두 작업의 "마지막 실행 시간"과 `magicmirror.log`의 시각을 비교합니다. |
+| 로그인 후 한참 안 뜸 | 이 PC(HDD)는 부팅 직후 디스크가 바빠 로그온 후 화면까지 **5분 가까이** 걸린 적이 있습니다(2026-10-30: 작업 시작 → Node 첫 로그 2분, 디스플레이 도우미 38초, Electron 1분 반). 작업 스케줄러에서 두 작업의 "마지막 실행 시간"과 `magicmirror.log`의 시각을 비교합니다. |
 | 프로그램은 도는데 미러 화면에 바탕화면만 보임 | 첫 화면을 불러오는 중에 Electron 네트워크 서비스가 죽으면(`Network service crashed`) MagicMirror 창이 숨겨진 채 남습니다. 런처가 시작 2분 안의 이 메시지를 보면 Electron을 다시 띄우고 `magicmirror.log`에 `다시 시작합니다 (n/5)`를 남깁니다. 그래도 안 뜨면 `스마트미러 다시 시작` 바로가기를 씁니다. |
 | 미러가 주 화면에 뜸 | `magicmirror.log`의 `미러 디스플레이 '...'를 찾지 못해` 메시지. `GNUVIL_MIRROR_DISPLAY`와 연결된 화면 목록을 비교합니다. |
 | 곡 정보가 안 나옴 | `curl.exe http://127.0.0.1:8765/now-playing`. 503이면 `now-playing.log`에서 `SMTC reader is not built` 확인 후 `build-helpers.ps1`. 작업 표시줄 미디어 컨트롤(볼륨 팝업)에 곡이 안 보이면 브라우저가 SMTC에 올리지 않는 것입니다. |
