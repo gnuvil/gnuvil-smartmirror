@@ -129,16 +129,12 @@
   margin-bottom: 0;
 }
 
-/* 비 안내는 온도 바로 위 한 줄. 비 소식이 없으면 자리를 차지하지 않는다. */
+/* 비 안내(없으면 인사말)는 온도 바로 위 한 줄 */
 .module.MMM-GnuvilRainNotice {
   margin-bottom: 0;
 }
 
-.module.MMM-GnuvilRainNotice:has(.gnuvil-rain-notice.empty) {
-  display: none;
-}
-
-.module.MMM-GnuvilRainNotice:has(.gnuvil-rain-notice:not(.empty)) + .module.weather {
+.module.MMM-GnuvilRainNotice + .module.weather {
   margin-top: 4px;
 }
 

@@ -77,7 +77,7 @@ if (
       lon: longitude
     }
   });
-  // 시계 바로 아래에 둔다 (같은 top_left에서 시계 다음 순서). 지역명 머리글은 비 안내로 대신한다.
+  // 시계 바로 아래에 둔다 (같은 top_left에서 시계 다음 순서). 지역명 머리글은 비 안내(없으면 인사말)로 대신한다.
   modules.push({
     module: "weather",
     position: "top_left",

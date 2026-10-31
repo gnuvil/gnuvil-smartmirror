@@ -4,3 +4,8 @@
   font-size: 18px;
   line-height: 1.2;
 }
+
+/* 비 소식이 없을 때의 인사말은 안내보다 한 단계 흐리게 */
+.gnuvil-rain-notice.greeting {
+  color: var(--color-text);
+}

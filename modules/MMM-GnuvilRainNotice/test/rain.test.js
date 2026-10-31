@@ -81,19 +81,50 @@ test("needs a location before it asks for the forecast", () => {
   assert.match(errors[0], /위도·경도/);
 });
 
-test("shows the notice only when rain or snow is expected", () => {
+function loadFront(now) {
   let definition;
+  const timers = [];
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, "..", "MMM-GnuvilRainNotice.js"), "utf8"), {
     Module: { register: (name, value) => { definition = value; } },
-    document: { createElement: () => ({ className: "", textContent: "" }) }
+    document: { createElement: () => ({ className: "", textContent: "" }) },
+    setInterval: (fn) => timers.push(fn)
   });
-  const instance = { ...definition, config: { ...definition.defaults }, sendSocketNotification() {}, updateDom() {} };
+  const clock = { now };
+  const instance = { ...definition, config: { ...definition.defaults }, now: () => clock.now,
+    sendSocketNotification() {}, updates: 0, updateDom() { this.updates += 1; } };
   instance.start();
-  assert.equal(instance.getDom().className, "gnuvil-rain-notice empty");
+  return { instance, clock, tick: () => timers.forEach((fn) => fn()) };
+}
+
+test("shows the notice when rain or snow is expected, otherwise a greeting", () => {
+  const { instance } = loadFront(NOW);
+  assert.equal(instance.getDom().className, "gnuvil-rain-notice greeting");
+  assert.equal(instance.getDom().textContent, "즐거운 오후 보내세요!");
   instance.socketNotificationReceived("RAIN_NOTICE", { kind: "rain" });
   assert.equal(instance.getDom().textContent, "오늘은 비가 올 수 있어요!");
+  assert.equal(instance.getDom().className, "gnuvil-rain-notice");
   instance.socketNotificationReceived("RAIN_NOTICE", { kind: "snow" });
   assert.equal(instance.getDom().textContent, "오늘은 눈이 올 수 있어요!");
   instance.socketNotificationReceived("RAIN_NOTICE", { kind: "hail" });
-  assert.equal(instance.getDom().className, "gnuvil-rain-notice empty");
+  assert.equal(instance.getDom().textContent, "즐거운 오후 보내세요!");
+});
+
+test("picks the greeting from the local hour and redraws only when it changes", () => {
+  const at = (iso) => new Date(iso);
+  const greeting = (iso) => loadFront(at(iso)).instance.getDom().textContent;
+  // 시각은 모두 KST
+  assert.equal(greeting("2026-10-29T19:59:00Z"), "늦은 시간이에요, 푹 쉬세요!"); // 04:59
+  assert.equal(greeting("2026-10-29T20:00:00Z"), "좋은 아침이에요!"); // 05:00
+  assert.equal(greeting("2026-10-30T02:59:00Z"), "좋은 아침이에요!"); // 11:59
+  assert.equal(greeting("2026-10-30T03:00:00Z"), "즐거운 오후 보내세요!"); // 12:00
+  assert.equal(greeting("2026-10-30T08:00:00Z"), "오늘 하루도 수고했어요!"); // 17:00
+  assert.equal(greeting("2026-10-30T13:00:00Z"), "늦은 시간이에요, 푹 쉬세요!"); // 22:00
+
+  const { instance, clock, tick } = loadFront(at("2026-10-30T07:58:00Z")); // 16:58
+  tick();
+  assert.equal(instance.updates, 0);
+  clock.now = at("2026-10-30T08:00:00Z");
+  tick();
+  assert.equal(instance.updates, 1);
+  assert.equal(instance.getDom().textContent, "오늘 하루도 수고했어요!");
 });
