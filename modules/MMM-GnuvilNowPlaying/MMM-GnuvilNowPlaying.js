@@ -116,9 +116,11 @@ Module.register("MMM-GnuvilNowPlaying", {
         const order = document.createElement("span");
         order.className = "gnuvil-now-playing-queue-order";
         order.textContent = String(index + 1);
-        row.append(order,
-          this.marqueeCell("gnuvil-now-playing-queue-title", next.title, movers),
-          this.marqueeCell("gnuvil-now-playing-queue-artist", next.artist || "", movers));
+        // 곡명만 움직이고, 가수는 글자 길이만큼 자리를 차지해 한 줄에 다 보인다.
+        const artist = document.createElement("span");
+        artist.className = "gnuvil-now-playing-queue-artist";
+        artist.textContent = next.artist || "";
+        row.append(order, this.marqueeCell("gnuvil-now-playing-queue-title", next.title, movers), artist);
         queue.appendChild(row);
       });
       wrapper.appendChild(queue);

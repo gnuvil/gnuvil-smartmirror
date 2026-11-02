@@ -60,27 +60,26 @@
 
 .gnuvil-now-playing-queue-title {
   color: var(--color-text-bright);
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: 6em;
   overflow: hidden;
 }
 
+/* 가수는 글자 길이만큼 자리를 차지해 한 줄에 전부 보이고, 곡명이 남은 자리를 쓴다. */
 .gnuvil-now-playing-queue-artist {
-  flex: 0 1 auto;
+  flex: 0 0 auto;
   font-size: 0.85em;
-  max-width: 38%;
-  overflow: hidden;
+  text-align: right;
+  white-space: nowrap;
 }
 
-.gnuvil-now-playing-queue-title-text,
-.gnuvil-now-playing-queue-artist-text {
+.gnuvil-now-playing-queue-title-text {
   display: inline-block;
   white-space: nowrap;
 }
 
-/* 칸보다 긴 곡명·가수는 버스 행선지처럼 끝까지 보여 주고 돌아온다. */
-.gnuvil-now-playing-queue-title.is-overflowing .gnuvil-now-playing-queue-title-text,
-.gnuvil-now-playing-queue-artist.is-overflowing .gnuvil-now-playing-queue-artist-text {
+/* 칸보다 긴 곡명은 버스 행선지처럼 끝까지 보여 주고 돌아온다. */
+.gnuvil-now-playing-queue-title.is-overflowing .gnuvil-now-playing-queue-title-text {
   animation: gnuvil-queue-marquee var(--marquee-duration, 8s) ease-in-out infinite;
   animation-delay: var(--marquee-delay, 0s);
 }
@@ -92,8 +91,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gnuvil-now-playing-queue-title.is-overflowing .gnuvil-now-playing-queue-title-text,
-  .gnuvil-now-playing-queue-artist.is-overflowing .gnuvil-now-playing-queue-artist-text {
+  .gnuvil-now-playing-queue-title.is-overflowing .gnuvil-now-playing-queue-title-text {
     animation: none;
   }
 }
