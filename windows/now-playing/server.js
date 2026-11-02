@@ -5,6 +5,7 @@
 const { createServer } = require("../../main-pc/now-playing-agent/server");
 const { SmtcPlayer } = require("./smtc_player");
 const { CaptionStore } = require("./caption_store");
+const { SoloistPlayer, combinePlayers } = require("./soloist_player");
 
 function start() {
   const bind = process.env.GNUVIL_NOW_PLAYING_BIND || "127.0.0.1";
@@ -17,9 +18,12 @@ function start() {
   const captions = new CaptionStore();
   const player = new SmtcPlayer({ captions });
   player.start();
-  const server = createServer({ player, token, extraRoute: (request, response) => captions.route(request, response) });
+  // Spotify Soloist는 미디어 세션이 없어 로컬 WebSocket으로 읽는다. 브라우저가 재생 중이면 그쪽을 먼저 보여 준다.
+  const soloist = process.env.GNUVIL_SOLOIST === "off" ? null : new SoloistPlayer();
+  soloist?.start();
+  const server = createServer({ player: soloist ? combinePlayers(player, soloist) : player, token, extraRoute: (request, response) => captions.route(request, response) });
   server.listen(port, bind, () => console.log(`[gnuvil-now-playing] listening on ${bind}:${port}`));
-  server.on("close", () => player.stop());
+  server.on("close", () => { player.stop(); soloist?.stop(); });
   return server;
 }
 
