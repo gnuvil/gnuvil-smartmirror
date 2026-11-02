@@ -54,3 +54,18 @@ test("shows an idle message, then playing metadata and artwork, then the idle me
   instance.socketNotificationReceived("NOW_PLAYING_DATA", { playing: false, unavailable: true });
   assert.match(instance.getDom().text(), /음악 정보를 불러올 수 없습니다/);
 });
+
+test("lists the next tracks above the caption", () => {
+  const instance = { ...definition, config: definition.defaults, sendSocketNotification() {}, updateDom() {} };
+  instance.start();
+  instance.socketNotificationReceived("NOW_PLAYING_DATA", {
+    playing: true, title: "Ditto", artist: "NewJeans", caption: "널 보고 있어",
+    queue: [{ title: "Hype Boy", artist: "NewJeans" }, { title: "Blinding Lights", artist: "" }, { title: "C", artist: "c" }, { title: "D", artist: "d" }]
+  });
+  const dom = instance.getDom();
+  const queue = dom.children.find((child) => child.className === "gnuvil-now-playing-queue");
+  assert.deepEqual(queue.children.map((child) => child.textContent), ["다음 곡", "Hype Boy · NewJeans", "Blinding Lights", "C · c"]);
+  assert.ok(dom.children.indexOf(queue) < dom.children.findIndex((child) => child.className === "gnuvil-now-playing-caption"));
+  instance.socketNotificationReceived("NOW_PLAYING_DATA", { playing: true, title: "Ditto", artist: "NewJeans" });
+  assert.equal(instance.getDom().children.some((child) => child.className === "gnuvil-now-playing-queue"), false);
+});

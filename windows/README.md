@@ -59,7 +59,7 @@ Add-Type -AssemblyName System.Windows.Forms; [System.Windows.Forms.Screen]::AllS
 
 키가 없으면 미러에 `버스 API 키 필요`가 표시되고 요청은 보내지 않습니다. 같은 키를 쓰는 Raspberry Pi는 꺼 둡니다(하루 1,000회 한도, 이 PC 혼자 약 720회).
 
-### YouTube 자막
+### YouTube 자막과 다음 곡
 
 YouTube 자막은 Windows 미디어 세션에 없으므로 Edge 확장이 플레이어에 **지금 보이는 자막 줄**을 읽어 `POST http://127.0.0.1:8765/caption`으로 보냅니다. 미러는 표지·재생바 아래에 최대 두 줄로 보여 줍니다.
 
@@ -71,6 +71,7 @@ YouTube 자막은 Windows 미디어 세션에 없으므로 Edge 확장이 플레
 - YouTube 플레이어에서 **자막(CC)이 켜져 있어야** 합니다. 자동 생성·번역 자막도 보이는 그대로 나옵니다. 자막이 없는 영상은 자막 줄이 생기지 않습니다.
 - 확장은 **영상이 재생 중인 탭에서만** 보내고, 서버는 영상 제목이 미러에 보이는 곡과 같을 때만 붙입니다. 3초 동안 소식이 없으면 자막을 지웁니다.
 - 서버는 이 PC에서 온 JSON 요청 중 `X-Gnuvil-Caption: 1` 헤더가 있는 것만 받습니다. 일반 웹 페이지는 이 헤더를 붙여 보낼 수 없습니다(사전 요청에 응답하지 않음). 확장은 이 PC의 API 말고 다른 곳으로는 아무것도 보내지 않습니다.
+- 같은 확장이 YouTube 재생목록 패널(`ytd-playlist-panel-video-renderer`)에서 **지금 곡 다음 3곡**의 제목과 채널을 읽어 자막과 같은 요청(`queue`)에 실어 보냅니다. 서버가 현재 곡과 같은 규칙(`youtube_title.js`)으로 곡명·가수로 나누어 `/now-playing` 응답의 `queue`에 붙이고, 미러가 표지·재생바 아래에 "다음 곡"으로 보여 줍니다. 재생목록이 아닌 영상이면 패널이 없어 `queue`도 없습니다. 다음 곡은 iTunes로 확인하지 않고 제목에서만 나눕니다.
 - 미러는 자막을 따라가도록 1초마다 API를 조회합니다(`config.js`의 `updateInterval: 1000`).
 - `git pull`로 확장이 바뀌었으면 `edge://extensions`에서 이 확장의 **다시 로드**를 누르고 YouTube 탭을 새로고침합니다.
 

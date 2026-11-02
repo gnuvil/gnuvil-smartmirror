@@ -167,3 +167,24 @@ test("accepts only small known image thumbnails", () => {
   assert.equal(thumbnailData(Buffer.from("hello world").toString("base64")), null);
   assert.equal(thumbnailData(PNG + "A".repeat(360_000)), null);
 });
+
+test("adds the next playlist items, split into title and artist like the current track", async () => {
+  const captions = {
+    current: () => null,
+    upcoming: () => [
+      { title: "第六感 THE SIXTH SENSE (Reol) / Hebi. Remix cover", channel: "Hebi." },
+      { title: "Blinding Lights", channel: "The Weeknd - Topic" }
+    ]
+  };
+  const child = fakeChild();
+  const player = new SmtcPlayer({ spawnImpl: () => child, now: () => 1_000_000, trackLookup: null, captions,
+    log: { error() {} }, setTimer: () => 1, clearTimer() {} });
+  player.start();
+  child.stdout.emit("data", `${JSON.stringify({ sessions: [edge()] })}\n`);
+  assert.deepEqual((await player.get()).queue, [
+    { title: "第六感 THE SIXTH SENSE (Reol)", artist: "Hebi." },
+    { title: "Blinding Lights", artist: "The Weeknd" }
+  ]);
+  child.stdout.emit("data", `${JSON.stringify({ sessions: [{ ...edge(), app: "Spotify.exe" }] })}\n`);
+  assert.equal((await player.get()).queue, undefined);
+});

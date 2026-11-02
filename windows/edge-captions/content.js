@@ -4,6 +4,7 @@
 // 영상이 재생 중인 탭에서만 보내므로, 멈춘 탭이나 다른 탭이 미러 자막을 덮어쓰지 않는다.
 const READ_INTERVAL = 250;
 const HEARTBEAT = 1000;
+const MAX_UPCOMING = 3;
 let lastText = null;
 let lastSentAt = 0;
 
@@ -20,6 +21,17 @@ function videoTitle() {
     || document.title.replace(/^\(\d+\)\s*/, "").replace(/\s*-\s*YouTube$/, "");
 }
 
+// 재생목록 패널에서 지금 곡 다음에 오는 곡들을 읽는다. 재생목록이 아닌 영상은 패널이 없어 빈 배열이다.
+function upcoming() {
+  const items = [...document.querySelectorAll("ytd-playlist-panel-video-renderer")];
+  const current = items.findIndex((item) => item.hasAttribute("selected"));
+  if (current < 0) return [];
+  const text = (element) => (element?.getAttribute("title") || element?.textContent || "").replace(/\s+/g, " ").trim();
+  return items.slice(current + 1, current + 1 + MAX_UPCOMING)
+    .map((item) => ({ title: text(item.querySelector("#video-title")), channel: text(item.querySelector("#byline")) }))
+    .filter((item) => item.title);
+}
+
 setInterval(() => {
   const video = document.querySelector("video.html5-main-video") || document.querySelector("video");
   if (!video || video.paused || video.ended) return;
@@ -29,7 +41,7 @@ setInterval(() => {
   lastText = text;
   lastSentAt = now;
   try {
-    chrome.runtime.sendMessage({ text, title: videoTitle() });
+    chrome.runtime.sendMessage({ text, title: videoTitle(), queue: upcoming() });
   } catch {
     // 확장을 다시 불러오면 이전 페이지의 스크립트는 연결이 끊긴다. 새로고침하면 다시 동작한다.
   }

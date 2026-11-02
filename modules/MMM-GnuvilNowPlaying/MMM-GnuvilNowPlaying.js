@@ -67,6 +67,21 @@ Module.register("MMM-GnuvilNowPlaying", {
       details.appendChild(progress);
     }
     wrapper.appendChild(details);
+    if (track.queue?.length) {
+      const queue = document.createElement("div");
+      queue.className = "gnuvil-now-playing-queue";
+      const heading = document.createElement("div");
+      heading.className = "gnuvil-now-playing-queue-label";
+      heading.textContent = "다음 곡";
+      queue.appendChild(heading);
+      for (const next of track.queue.slice(0, 3)) {
+        const row = document.createElement("div");
+        row.className = "gnuvil-now-playing-queue-item";
+        row.textContent = next.artist ? `${next.title} · ${next.artist}` : next.title;
+        queue.appendChild(row);
+      }
+      wrapper.appendChild(queue);
+    }
     if (track.caption || this.captionTitle === track.title) {
       const caption = document.createElement("div");
       caption.className = "gnuvil-now-playing-caption";

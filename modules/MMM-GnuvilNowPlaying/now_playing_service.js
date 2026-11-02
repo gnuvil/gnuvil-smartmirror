@@ -34,6 +34,14 @@ function normalize(data) {
     ? data.caption.split("\n").map((line) => line.trim()).filter(Boolean).slice(0, 2).join("\n").slice(0, 300)
     : "";
   if (caption) result.caption = caption;
+  // 재생목록이 있으면 다음 곡을 최대 3개 보낸다.
+  const queue = (Array.isArray(data.queue) ? data.queue : []).slice(0, 3)
+    .map((item) => ({
+      title: typeof item?.title === "string" ? item.title.trim().slice(0, 240) : "",
+      artist: typeof item?.artist === "string" ? item.artist.trim().slice(0, 240) : ""
+    }))
+    .filter((item) => item.title);
+  if (queue.length) result.queue = queue;
   if (typeof data.artData === "string"
     && /^data:image\/(png|jpeg|gif|webp);base64,[A-Za-z0-9+/=]+$/.test(data.artData)
     && data.artData.length <= 360_000) {

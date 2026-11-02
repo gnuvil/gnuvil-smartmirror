@@ -46,8 +46,24 @@ test("accepts captions over HTTP only with the extension header and adds them to
   assert.equal((await fetch(`${base}/caption`, { method: "OPTIONS" })).status, 403);
   const json = { "Content-Type": "application/json", "X-Gnuvil-Caption": "1" };
   assert.equal((await post(json, "not json")).status, 400);
-  assert.equal((await post(json, JSON.stringify({ text: "x".repeat(5000) }))).status, 413);
+  assert.equal((await post(json, JSON.stringify({ text: "x".repeat(9000) }))).status, 413);
   assert.equal((await post(json, JSON.stringify({ text: "널 보고 있어", title: "Ditto" }))).status, 204);
   const data = await (await fetch(`${base}/now-playing`)).json();
   assert.equal(data.caption, "널 보고 있어");
+});
+
+test("keeps up to three upcoming playlist items for the same fresh video", () => {
+  let clock = 1000;
+  const store = new CaptionStore({ now: () => clock });
+  assert.deepEqual(store.upcoming("Ditto"), []);
+  store.update({
+    text: "", title: "Ditto",
+    queue: [{ title: " 첫째\n곡 ", channel: "채널" }, { title: "" }, { title: "둘째" }, { title: "셋째" }, { title: "넷째" }, null]
+  });
+  assert.deepEqual(store.upcoming("Ditto"), [{ title: "첫째 곡", channel: "채널" }, { title: "둘째", channel: "" }]);
+  assert.deepEqual(store.upcoming("Hype Boy"), []);
+  clock += 3500;
+  assert.deepEqual(store.upcoming("Ditto"), []);
+  store.update({ text: "", title: "Ditto", queue: "not a list" });
+  assert.deepEqual(store.upcoming("Ditto"), []);
 });

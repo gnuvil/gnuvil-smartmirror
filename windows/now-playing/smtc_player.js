@@ -192,6 +192,7 @@ class SmtcPlayer {
     const { artist, title } = found?.index === 1 && parsed.alternate ? parsed.alternate : parsed;
     const art = found && !parsed.cover ? { artUrl: found.artUrl } : thumbnail ? { artData: thumbnail } : null;
     const caption = browser && this.captions ? this.captions.current(session.title) : null;
+    const queue = browser && this.captions ? this.upcoming(session.title) : [];
     return {
       playing: true,
       title: clean(title),
@@ -199,8 +200,17 @@ class SmtcPlayer {
       album: clean(session.album),
       ...this.timeline(session),
       ...(art || {}),
-      ...(caption ? { caption } : {})
+      ...(caption ? { caption } : {}),
+      ...(queue.length ? { queue } : {})
     };
+  }
+
+  // 재생목록의 다음 곡을 현재 곡과 같은 규칙으로 곡명·가수로 나눈다. (iTunes 확인은 하지 않는다.)
+  upcoming(sessionTitle) {
+    return (this.captions.upcoming?.(sessionTitle) || []).map(({ title, channel }) => {
+      const parsed = parseYouTubeTitle(title, channel);
+      return { title: clean(parsed.title), artist: clean(parsed.artist) };
+    });
   }
 }
 

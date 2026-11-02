@@ -6,7 +6,7 @@ chrome.runtime.onMessage.addListener((message) => {
   fetch("http://127.0.0.1:8765/caption", {
     method: "POST",
     headers: { "Content-Type": "application/json", "X-Gnuvil-Caption": "1" },
-    body: JSON.stringify({ text: message?.text || "", title: message?.title || "" })
+    body: JSON.stringify({ text: message?.text || "", title: message?.title || "", queue: message?.queue || [] })
   }).catch(() => {
     // 미러 API가 꺼져 있으면 조용히 무시한다.
   });

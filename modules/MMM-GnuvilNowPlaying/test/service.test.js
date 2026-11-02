@@ -59,3 +59,12 @@ test("reads metadata and distinguishes a pause from a connection failure", async
   assert.deepEqual(sent.at(-1).data, { playing: false, unavailable: true });
   service.stop();
 });
+
+test("passes on at most three well-formed upcoming tracks", () => {
+  const queue = [{ title: " A ", artist: " 가수 " }, { title: "" }, { title: "B" }, { title: "C" }, { title: "D" }, 7];
+  assert.deepEqual(normalize({ playing: true, title: "X", queue }).queue, [
+    { title: "A", artist: "가수" }, { title: "B", artist: "" }
+  ]);
+  assert.equal(normalize({ playing: true, title: "X", queue: [] }).queue, undefined);
+  assert.equal(normalize({ playing: true, title: "X", queue: "A" }).queue, undefined);
+});

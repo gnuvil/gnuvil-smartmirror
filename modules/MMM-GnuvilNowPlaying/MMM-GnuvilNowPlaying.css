@@ -29,6 +29,25 @@
   min-width: 0;
 }
 
+/* 재생목록의 다음 곡. 표지·재생바 아래 한 줄을 통째로 쓰고, 현재 곡보다 눈에 덜 띄게 한다. */
+.gnuvil-now-playing-queue {
+  color: var(--color-text-dimmed);
+  flex: 0 0 100%;
+  font-size: clamp(14px, 1.3vw, 18px);
+  line-height: 1.5;
+}
+
+.gnuvil-now-playing-queue-label {
+  font-size: 13px;
+  letter-spacing: 0.08em;
+}
+
+.gnuvil-now-playing-queue-item {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 /* 표지·재생바 아래 한 줄을 통째로 쓰는 자막. 두 줄이면 줄을 나눠 보여 준다. */
 .gnuvil-now-playing-caption {
   color: var(--color-text-bright);

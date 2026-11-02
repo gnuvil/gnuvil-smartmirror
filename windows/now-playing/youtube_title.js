@@ -12,6 +12,8 @@ const TAG = /^(?:official\s*)?(?:music\s*video|m\/?v|video|audio|lyrics?(?:\s*vi
 const TRAILING_TAG = /[\s\-–—:：|｜]*(?:official\s*)?(?:music\s*video|m\/v|mv|lyrics?\s*video|lyrics|audio|video|visuali[sz]er)\s*$/i;
 const BRACKETS = /\s*[(\[【（]([^)\]】）]*)[)\]】）]/g;
 const QUOTED = /(^|\s)[‘'"“「『]([^’'"”」』]+)[’'"”」』](?=\s|$)/;
+// 가수 이름에 바로 붙여 쓴 일본식 따옴표 (YOASOBI「アイドル」)
+const QUOTED_ATTACHED = /()[「『]([^」』]+)[」』](?=\s|$)/;
 const DASH = /\s+[-–—_]\s+/;
 const SLASH = /\s+[/／]\s+/;
 const PIPE = /\s+[|｜]\s+/;
@@ -172,7 +174,7 @@ function parseOriginal(text, { hint, channel }) {
   let artist = "";
   let title = text;
   let alternate = null;
-  const quoted = QUOTED.exec(text);
+  const quoted = QUOTED.exec(text) || QUOTED_ATTACHED.exec(text);
   const dashed = splitOutside(text, DASH);
   const slashed = splitOutside(text, SLASH);
   if (quoted) {
