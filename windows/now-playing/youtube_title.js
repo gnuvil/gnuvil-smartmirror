@@ -59,7 +59,7 @@ function stripAlias(artist) {
 }
 
 function trimSeparators(text) {
-  return text.replace(/^[\s\-–—_:：|｜/✧✦★☆♪◆・·]+|[\s\-–—_:：|｜/✧✦★☆♪◆・·]+$/g, "").trim();
+  return text.replace(/^[\s\-–—_:：|｜┃/✧✦★☆♪◆・·]+|[\s\-–—_:：|｜┃/✧✦★☆♪◆・·]+$/g, "").trim();
 }
 
 function tidyTitle(text) {
@@ -157,6 +157,8 @@ function parseCover(text, { hint, channel }) {
 
   const artist = cleanName(performer) || hint || channel;
   const title = tidyTitle(song);
+  // 반대 순서일 때는 이 조각이 곡명이므로 "날아오를 때 (飛ぶ時)"의 원제를 지우지 않고 둔다.
+  const reversedTitle = tidyTitle(originalArtist);
   originalArtist = cleanName(originalArtist);
   if (!originalArtist) return { artist, title, cover: true, alternate: null, search: [] };
   // "아이유 - 밤편지 (cover)"처럼 원곡 가수가 앞에 오는 제목도 있어 반대 순서도 iTunes로 확인한다.
@@ -164,8 +166,8 @@ function parseCover(text, { hint, channel }) {
     artist,
     title,
     cover: true,
-    alternate: { artist, title: originalArtist },
-    search: [{ artist: originalArtist, title }, { artist: title, title: originalArtist }]
+    alternate: { artist, title: reversedTitle },
+    search: [{ artist: originalArtist, title }, { artist: title, title: reversedTitle }]
   };
 }
 

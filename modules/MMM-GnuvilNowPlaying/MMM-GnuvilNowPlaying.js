@@ -80,12 +80,21 @@ Module.register("MMM-GnuvilNowPlaying", {
       heading.className = "gnuvil-now-playing-queue-label";
       heading.textContent = "다음 곡";
       queue.appendChild(heading);
-      for (const next of track.queue.slice(0, 3)) {
+      track.queue.slice(0, 3).forEach((next, index) => {
         const row = document.createElement("div");
         row.className = "gnuvil-now-playing-queue-item";
-        row.textContent = next.artist ? `${next.title} · ${next.artist}` : next.title;
+        const order = document.createElement("span");
+        order.className = "gnuvil-now-playing-queue-order";
+        order.textContent = String(index + 1);
+        const title = document.createElement("span");
+        title.className = "gnuvil-now-playing-queue-title";
+        title.textContent = next.title;
+        const artist = document.createElement("span");
+        artist.className = "gnuvil-now-playing-queue-artist";
+        artist.textContent = next.artist || "";
+        row.append(order, title, artist);
         queue.appendChild(row);
-      }
+      });
       wrapper.appendChild(queue);
     }
     return wrapper;

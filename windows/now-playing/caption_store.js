@@ -12,9 +12,11 @@ const MAX_LENGTH = 200;
 const LOOPBACK = new Set(["127.0.0.1", "::1", "::ffff:127.0.0.1"]);
 
 function cleanCaption(value) {
-  return String(value || "").normalize("NFKC").split(/\r?\n/)
+  const lines = String(value || "").normalize("NFKC").split(/\r?\n/)
     .map((line) => line.replace(/[\u0000-\u001f\u007f]/g, " ").replace(/\s+/g, " ").trim())
-    .filter(Boolean).slice(-MAX_LINES).join("\n").slice(0, MAX_LENGTH);
+    .filter(Boolean);
+  // 같은 문장이 두 줄로 겹쳐 오면 한 줄만 쓴다.
+  return [...new Set(lines)].slice(-MAX_LINES).join("\n").slice(0, MAX_LENGTH);
 }
 
 function cleanQueue(value) {

@@ -12,6 +12,11 @@ test("cleans caption text to at most two short lines", () => {
   assert.equal(cleanCaption(undefined), "");
 });
 
+test("merges caption lines that repeat the same sentence", () => {
+  assert.equal(cleanCaption("널 보고 있어\n널  보고 있어 "), "널 보고 있어");
+  assert.equal(cleanCaption("널 보고 있어\n너를 보고 있어"), "널 보고 있어\n너를 보고 있어");
+});
+
 test("matches captions to the video shown on the mirror", () => {
   assert.equal(sameVideo("Ditto MV", "Ditto MV"), true);
   assert.equal(sameVideo("(3) Ditto MV", "Ditto MV"), true);

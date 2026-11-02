@@ -188,3 +188,19 @@ test("adds the next playlist items, split into title and artist like the current
   child.stdout.emit("data", `${JSON.stringify({ sessions: [{ ...edge(), app: "Spotify.exe" }] })}\n`);
   assert.equal((await player.get()).queue, undefined);
 });
+
+test("uses the iTunes order for upcoming covers once the lookup finishes", async () => {
+  const captions = { current: () => null, upcoming: () => [{ title: "Vaundy / 날아오를 때 (飛ぶ時)┃Cover by Hebi", channel: "Hebi." }] };
+  const seen = [];
+  const child = fakeChild();
+  const player = new SmtcPlayer({ spawnImpl: () => child, now: () => 1_000_000, captions,
+    trackLookup: async (candidates) => { seen.push(candidates); return { index: 1, artUrl: "https://art.example/a.jpg" }; },
+    log: { error() {} }, setTimer: () => 1, clearTimer() {} });
+  player.start();
+  child.stdout.emit("data", `${JSON.stringify({ sessions: [edge()] })}
+`);
+  await player.get();
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(seen.some((candidates) => candidates[1]?.artist === "Vaundy" && candidates[1].title === "날아오를 때 (飛ぶ時)"), true);
+  assert.deepEqual((await player.get()).queue, [{ title: "날아오를 때 (飛ぶ時)", artist: "Hebi" }]);
+});
