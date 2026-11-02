@@ -153,11 +153,11 @@ function overlapSetup() {
   return { child, send, spotify, youtube };
 }
 
-test("pauses YouTube when Spotify starts while the browser is playing", () => {
+test("pauses Spotify, not YouTube, when Spotify starts while the browser is playing", () => {
   const { child, send, spotify, youtube } = overlapSetup();
-  send([youtube("Playing")]);
+  send([youtube("Playing"), spotify("Paused")]);
   send([youtube("Playing"), spotify("Playing")]);
-  assert.deepEqual(child.stdin.written, [{ pause: "msedge.exe" }]);
+  assert.deepEqual(child.stdin.written, [{ pause: "Spotify.exe" }]);
 });
 
 test("pauses Spotify when YouTube starts while Spotify is playing", () => {
@@ -167,15 +167,24 @@ test("pauses Spotify when YouTube starts while Spotify is playing", () => {
   assert.deepEqual(child.stdin.written, [{ pause: "Spotify.exe" }]);
 });
 
-test("leaves both alone when they were already playing at startup or started together", () => {
+test("pauses Spotify when both play at startup or start together, and only once", () => {
   const { child, send, spotify, youtube } = overlapSetup();
   send([youtube("Playing"), spotify("Playing")]);
   send([youtube("Playing"), spotify("Playing")]);
   const fresh = overlapSetup();
   fresh.send([fresh.youtube("Paused"), fresh.spotify("Paused")]);
   fresh.send([fresh.youtube("Playing"), fresh.spotify("Playing")]);
+  fresh.send([fresh.youtube("Playing"), fresh.spotify("Playing")]);
+  assert.deepEqual(child.stdin.written, [{ pause: "Spotify.exe" }]);
+  assert.deepEqual(fresh.child.stdin.written, [{ pause: "Spotify.exe" }]);
+});
+
+test("leaves a lone Spotify or YouTube playing", () => {
+  const { child, send, spotify, youtube } = overlapSetup();
+  send([spotify("Playing"), youtube("Paused")]);
+  send([spotify("Paused"), youtube("Playing")]);
+  send([spotify("Playing"), youtube("Paused")]);
   assert.deepEqual(child.stdin.written, []);
-  assert.deepEqual(fresh.child.stdin.written, []);
 });
 
 test("does not pause between two browser sessions", () => {

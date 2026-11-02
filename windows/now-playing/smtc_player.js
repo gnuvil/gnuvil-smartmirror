@@ -150,23 +150,19 @@ class SmtcPlayer {
     }
   }
 
-  // Spotify와 브라우저가 동시에 재생되면 나중에 재생을 시작한 쪽만 남기고 먼저 재생하던 쪽을 일시정지한다.
-  // 처음 받은 상태는 기준으로만 쓰고(이미 둘 다 재생 중이면 건드리지 않는다), 같은 순간에 함께 시작한 쪽끼리는 멈추지 않는다.
+  // Spotify와 브라우저(YouTube)가 동시에 재생되면 언제나 YouTube를 남기고 Spotify를 일시정지한다.
+  // 겹치기 시작한 순간(어느 한쪽이 방금 재생을 시작했거나 처음 받은 상태)에만 한 번 보내고, 같은 상태에서는 다시 보내지 않는다.
   pauseOverlaps() {
     const previous = this.statuses;
     const primed = this.primed;
     this.statuses = new Map(this.sessions.map((session) => [session.app, session.status]));
     this.primed = true;
-    if (!primed) return;
     const playing = this.sessions.filter((session) => session?.status === "Playing");
-    for (const started of playing) {
-      const source = sourceOf(started.app);
-      if (!source || previous.get(started.app) === "Playing") continue;
-      for (const other of playing) {
-        const otherSource = sourceOf(other.app);
-        if (otherSource && otherSource !== source && previous.get(other.app) === "Playing") this.pause(other.app);
-      }
-    }
+    const spotify = playing.filter((session) => sourceOf(session.app) === "spotify");
+    const browsers = playing.filter((session) => sourceOf(session.app) === "browser");
+    if (!spotify.length || !browsers.length) return;
+    if (primed && [...spotify, ...browsers].every((session) => previous.get(session.app) === "Playing")) return;
+    for (const session of spotify) this.pause(session.app);
   }
 
   pause(app) {
