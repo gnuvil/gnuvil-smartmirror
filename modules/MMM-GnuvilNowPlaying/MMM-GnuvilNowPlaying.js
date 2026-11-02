@@ -67,6 +67,12 @@ Module.register("MMM-GnuvilNowPlaying", {
       details.appendChild(progress);
     }
     wrapper.appendChild(details);
+    if (track.caption || this.captionTitle === track.title) {
+      const caption = document.createElement("div");
+      caption.className = "gnuvil-now-playing-caption";
+      caption.textContent = track.caption || "";
+      wrapper.appendChild(caption);
+    }
     if (track.queue?.length) {
       const queue = document.createElement("div");
       queue.className = "gnuvil-now-playing-queue";
@@ -81,12 +87,6 @@ Module.register("MMM-GnuvilNowPlaying", {
         queue.appendChild(row);
       }
       wrapper.appendChild(queue);
-    }
-    if (track.caption || this.captionTitle === track.title) {
-      const caption = document.createElement("div");
-      caption.className = "gnuvil-now-playing-caption";
-      caption.textContent = track.caption || "";
-      wrapper.appendChild(caption);
     }
     return wrapper;
   }
