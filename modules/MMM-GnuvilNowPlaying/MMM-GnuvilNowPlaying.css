@@ -96,16 +96,16 @@
   }
 }
 
-/* 표지·재생바 아래 한 줄을 통째로 쓰는 자막. 두 줄이면 줄을 나눠 보여 준다. */
+/* 표지·재생바 아래 한 줄을 통째로 쓰는 자막. 여러 줄이어도 한 줄로 이어 보여 주고, 길면 양옆으로 삐져나와도 둔다. */
 .gnuvil-now-playing-caption {
   color: var(--color-text-bright);
+  display: flex;
   flex: 0 0 100%;
   font-size: clamp(18px, 1.9vw, 24px);
+  justify-content: center;
   line-height: 1.35;
   min-height: 1.35em;
-  overflow: hidden;
-  text-align: center;
-  white-space: pre-line;
+  white-space: nowrap;
 }
 
 .gnuvil-now-playing-label {

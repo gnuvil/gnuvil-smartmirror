@@ -100,7 +100,7 @@ Module.register("MMM-GnuvilNowPlaying", {
     if (track.caption || this.captionTitle === track.title) {
       const caption = document.createElement("div");
       caption.className = "gnuvil-now-playing-caption";
-      caption.textContent = track.caption || "";
+      caption.textContent = (track.caption || "").split("\n").map((line) => line.trim()).filter(Boolean).join(" / ");
       wrapper.appendChild(caption);
     }
     if (track.queue?.length) {

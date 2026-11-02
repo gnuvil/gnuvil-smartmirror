@@ -55,6 +55,13 @@ test("shows an idle message, then playing metadata and artwork, then the idle me
   assert.match(instance.getDom().text(), /음악 정보를 불러올 수 없습니다/);
 });
 
+test("joins a multi-line caption into one line", () => {
+  const instance = { ...definition, config: definition.defaults, sendSocketNotification() {}, updateDom() {} };
+  instance.start();
+  instance.socketNotificationReceived("NOW_PLAYING_DATA", { playing: true, title: "T", artist: "A", caption: "君の名は\n네 이름은\n" });
+  assert.equal(instance.getDom().children.at(-1).textContent, "君の名は / 네 이름은");
+});
+
 test("lists the next tracks below the caption", () => {
   const instance = { ...definition, config: definition.defaults, sendSocketNotification() {}, updateDom() {} };
   instance.start();
