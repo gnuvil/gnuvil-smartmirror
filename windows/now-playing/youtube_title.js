@@ -21,6 +21,8 @@ const COVER_PART = /^(.*?)[\s✧✦★☆♪◆・·\-–—/]*(?:\b(?:cover(?:e
 // 【COVER】, (cover), [Cover by 부른 사람]
 const COVER_BRACKET = /^\s*(?:cover(?:ed)?|covers|커버|歌ってみた)(?:\s+by\s+(.+?))?\s*$/i;
 const HANGUL_BAR = /\s*[ㅣᅵ]\s*/g;
+// "Hebi. Remix cover"처럼 Cover 바로 앞에 붙는 편곡 표시. 부른 사람 이름이 아니다.
+const COVER_KIND = /\s+(?:remix|arrange(?:d)?|acoustic|rock|piano|band|live|short|full|ver\.?|version|리믹스|어레인지|어쿠스틱|라이브)$/i;
 
 // 𝐫𝐚𝐲처럼 꾸밈용 유니코드 글자나 전각 문자로 쓴 제목을 보통 글자로 바꾼다.
 // 한글 모음 'ㅣ'를 구분선으로 쓰는 제목이 있어(TOKOTOKOㅣ아라하시 타비) '|'로 바꾼다. 낱자 'ㅣ'는 보통 낱말에 쓰지 않는다.
@@ -94,6 +96,15 @@ function isCover(text) {
   return [...text.matchAll(BRACKETS)].some((match) => COVER_BRACKET.test(match[1]));
 }
 
+function stripCoverKind(name) {
+  let result = name.trim();
+  for (let previous = ""; previous !== result;) {
+    previous = result;
+    result = result.replace(COVER_KIND, "").trim();
+  }
+  return result;
+}
+
 function stripTrailingTags(text) {
   let result = text;
   for (let previous = ""; previous !== result;) {
@@ -135,7 +146,7 @@ function parseCover(text, { hint, channel }) {
         performer ||= after;
         if (before.trim()) originalArtist ||= before;
       } else {
-        performer ||= before;
+        performer ||= stripCoverKind(before);
       }
     } else {
       originalArtist ||= unwrap(part);

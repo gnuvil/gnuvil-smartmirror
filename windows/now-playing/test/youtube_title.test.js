@@ -26,6 +26,7 @@ const cases = [
   ["Lilac 「ライラック」 (Mrs. GREEN APPLE) - 아야츠노 유니 Cover", "아야츠노 유니 AYATSUNO YUNI",
     "아야츠노 유니", "Lilac 「ライラック」 (Mrs. GREEN APPLE)"],
   ["Stellar Stellar - [星街すいせい] ㅣ아카네 리제(Akane Lize) 【COVER】", "아카네 리제 AKANE LIZE", "아카네 리제", "Stellar Stellar"],
+  ["第六感 THE SIXTH SENSE (Reol) / Hebi. Remix cover", "Hebi.", "Hebi.", "第六感 THE SIXTH SENSE (Reol)"],
   ["Shape of You (Official Music Video)", "Ed Sheeran", "Ed Sheeran", "Shape of You"],
   ["Don't Stop Me Now (Official Video)", "Queen Official", "Queen", "Don't Stop Me Now"],
   ["Blinding Lights", "The Weeknd - Topic", "The Weeknd", "Blinding Lights"],
