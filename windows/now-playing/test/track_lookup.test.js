@@ -31,7 +31,8 @@ test("falls back to the Japanese store and a title-only match", async () => {
   };
   assert.deepEqual(await lookupTrack([{ artist: "Kenshi Yonezu", title: "바다의 유령 (海の幽霊)" }], { search }),
     { index: 0, artUrl: "https://example.com/sea.jpg" });
-  assert.deepEqual(stores, ["KR", "US", "JP"]);
+  // 마지막 JP는 괄호 안 원제로 한 번 더 찾은 것이다.
+  assert.deepEqual(stores, ["KR", "US", "JP", "JP"]);
 });
 
 test("does not take a same-titled cover or arrangement by someone else", async () => {
@@ -55,4 +56,19 @@ test("searches one store and keeps https artwork", async () => {
   assert.deepEqual(queries, [["JP", "ja_jp"]]);
   assert.equal(results.length, 1);
   assert.deepEqual(results[0], { title: "Lemon", artist: "Kenshi Yonezu", artUrl: "https://is1.example.com/a/600x600bb.jpg" });
+});
+
+test("also searches the reversed order and the original title in the Japanese store", async () => {
+  const seen = [];
+  const search = async (term, store) => {
+    seen.push(`${store.country}:${term}`);
+    return term === "Vaundy 飛ぶ時" ? [{ title: "飛ぶ時", artist: "Vaundy", artUrl: "https://art.example/a.jpg" }] : [];
+  };
+  const found = await lookupTrack([
+    { artist: "날아오를 때", title: "Vaundy" },
+    { artist: "Vaundy", title: "날아오를 때 (飛ぶ時)" }
+  ], { search });
+  assert.deepEqual(found, { index: 1, artUrl: "https://art.example/a.jpg" });
+  assert.deepEqual(seen, ["KR:날아오를 때 Vaundy", "US:날아오를 때 Vaundy", "JP:날아오를 때 Vaundy",
+    "JP:Vaundy 날아오를 때 (飛ぶ時)", "JP:Vaundy 飛ぶ時"]);
 });

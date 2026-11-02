@@ -7,7 +7,8 @@
 
 const TIMEOUT_MS = 4000;
 // 한국 스토어에 없는 곡이 있어 미국 스토어도 보고, 일본 곡은 일본 스토어가 원어 제목(海の幽霊)으로 돌려준다.
-const STORES = [{ country: "KR" }, { country: "US" }, { country: "JP", lang: "ja_jp" }];
+const JAPAN = { country: "JP", lang: "ja_jp" };
+const STORES = [{ country: "KR" }, { country: "US" }, JAPAN];
 
 function key(value) {
   return String(value || "").normalize("NFKC").toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
@@ -55,6 +56,14 @@ async function searchTracks(term, { country, lang }, { fetchImpl = fetch } = {})
   return results;
 }
 
+function extraTerms(candidates, used) {
+  const terms = candidates.flatMap(({ artist, title }) => {
+    const inner = [...String(title).matchAll(/[(\[【（]([^)\]】）]+)[)\]】）]/g)].map((match) => match[1]);
+    return [title, ...inner].map((name) => `${artist} ${name}`.trim());
+  });
+  return [...new Set(terms)].filter((term) => term !== used);
+}
+
 // candidates: [{ artist, title }, ...] 앞쪽이 더 그럴듯한 후보다.
 async function lookupTrack(candidates, { search = searchTracks } = {}) {
   const first = candidates[0];
@@ -74,6 +83,13 @@ async function lookupTrack(candidates, { search = searchTracks } = {}) {
   // 일본 스토어는 아티스트를 米津玄師처럼 원어로 돌려줘 영문 표기와 맞지 않는다.
   for (const store of STORES) {
     const results = await search(term, store);
+    searched.push(results);
+    const found = match(results, true);
+    if (found) return found;
+  }
+  // 반대 순서와 괄호 안 원제(飛ぶ時)로도 찾아본다. 호출 수가 늘지 않도록 원어 제목이 있는 일본 스토어만 본다.
+  for (const extra of extraTerms(candidates, term)) {
+    const results = await search(extra, JAPAN);
     searched.push(results);
     const found = match(results, true);
     if (found) return found;
