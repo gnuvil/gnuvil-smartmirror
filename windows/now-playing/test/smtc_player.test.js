@@ -12,6 +12,9 @@ function fakeChild() {
   child.stdout = new EventEmitter();
   child.stdout.setEncoding = () => {};
   child.stderr = new EventEmitter();
+  child.stdin = new EventEmitter();
+  child.stdin.written = [];
+  child.stdin.write = (line) => { child.stdin.written.push(JSON.parse(line)); return true; };
   child.kill = () => { child.killed = true; };
   return child;
 }
@@ -137,6 +140,49 @@ test("adds the YouTube caption for the playing browser video", async () => {
   assert.deepEqual(seen, ["NewJeans (뉴진스) 'Ditto' Official MV"]);
   child.stdout.emit("data", `${JSON.stringify({ sessions: [{ ...edge(), app: "Spotify.exe" }] })}\n`);
   assert.equal((await player.get()).caption, undefined);
+});
+
+function overlapSetup() {
+  const child = fakeChild();
+  const player = new SmtcPlayer({ spawnImpl: () => child, now: () => 1_000_000, trackLookup: null,
+    log: { error() {} }, setTimer: () => 1, clearTimer() {} });
+  player.start();
+  const send = (sessions) => child.stdout.emit("data", `${JSON.stringify({ sessions })}\n`);
+  const spotify = (status) => ({ app: "Spotify.exe", status, title: "Ditto", artist: "NewJeans", position: 1, duration: 185, updatedAt: 1_000_000 });
+  const youtube = (status) => edge({ status });
+  return { child, send, spotify, youtube };
+}
+
+test("pauses YouTube when Spotify starts while the browser is playing", () => {
+  const { child, send, spotify, youtube } = overlapSetup();
+  send([youtube("Playing")]);
+  send([youtube("Playing"), spotify("Playing")]);
+  assert.deepEqual(child.stdin.written, [{ pause: "msedge.exe" }]);
+});
+
+test("pauses Spotify when YouTube starts while Spotify is playing", () => {
+  const { child, send, spotify, youtube } = overlapSetup();
+  send([spotify("Playing"), youtube("Paused")]);
+  send([spotify("Playing"), youtube("Playing")]);
+  assert.deepEqual(child.stdin.written, [{ pause: "Spotify.exe" }]);
+});
+
+test("leaves both alone when they were already playing at startup or started together", () => {
+  const { child, send, spotify, youtube } = overlapSetup();
+  send([youtube("Playing"), spotify("Playing")]);
+  send([youtube("Playing"), spotify("Playing")]);
+  const fresh = overlapSetup();
+  fresh.send([fresh.youtube("Paused"), fresh.spotify("Paused")]);
+  fresh.send([fresh.youtube("Playing"), fresh.spotify("Playing")]);
+  assert.deepEqual(child.stdin.written, []);
+  assert.deepEqual(fresh.child.stdin.written, []);
+});
+
+test("does not pause between two browser sessions", () => {
+  const { child, send, youtube } = overlapSetup();
+  send([youtube("Paused"), { ...youtube("Paused"), app: "chrome.exe" }]);
+  send([youtube("Paused"), { ...youtube("Playing"), app: "chrome.exe" }]);
+  assert.deepEqual(child.stdin.written, []);
 });
 
 test("does not clean titles from non-browser players", async () => {

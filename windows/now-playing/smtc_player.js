@@ -16,9 +16,17 @@ const MAX_ART_DATA = 350_000;
 const LOOKUP_CACHE_MS = 6 * 60 * 60 * 1000;
 const LOOKUP_RETRY_MS = 10 * 60 * 1000;
 const BROWSER = /^(msedge|chrome|firefox|brave|opera|whale|vivaldi)(\.exe)?$|Edge|Chrome|Firefox/i;
+const SPOTIFY = /spotify|soloist/i;
 
 function clean(value, maxLength = 240) {
   return String(value || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, maxLength);
+}
+
+// 동시에 소리를 내지 않게 맞추는 두 출처: Spotify(Soloist)와 브라우저(YouTube).
+function sourceOf(app) {
+  if (SPOTIFY.test(app || "")) return "spotify";
+  if (BROWSER.test(app || "")) return "browser";
+  return null;
 }
 
 // 재생 중인 브라우저 세션을 먼저, 그다음 재생 중인 다른 앱을 고른다.
@@ -57,6 +65,8 @@ class SmtcPlayer {
     this.receivedAt = 0;
     this.thumbnails = new Map();
     this.tracks = new Map();
+    this.statuses = new Map();
+    this.primed = false;
   }
 
   start() {
@@ -74,7 +84,7 @@ class SmtcPlayer {
 
   spawnReader() {
     if (!this.running) return;
-    const child = this.spawnImpl(this.command, [], { stdio: ["ignore", "pipe", "pipe"], windowsHide: true });
+    const child = this.spawnImpl(this.command, [], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     this.child = child;
     let buffer = "";
     child.stdout.setEncoding("utf8");
@@ -85,6 +95,8 @@ class SmtcPlayer {
       for (const line of lines) this.handleLine(line);
     });
     child.stderr.on("data", () => {});
+    // 도우미가 멈췄을 때 명령 쓰기가 실패해도 프로세스가 죽지 않게 한다.
+    child.stdin?.on?.("error", () => {});
     child.on("error", (error) => {
       this.missing = error.code === "ENOENT";
       this.handleExit(child, this.missing ? "SMTC reader is not built (run windows/build-helpers.ps1)" : error.message);
@@ -124,6 +136,7 @@ class SmtcPlayer {
     this.lastError = null;
     this.sessions = Array.isArray(data.sessions) ? data.sessions : [];
     this.receivedAt = this.now();
+    this.pauseOverlaps();
     for (const session of this.sessions) {
       const key = `${session.app}\x1f${session.title}\x1f${session.artist}`;
       // 도우미는 곡이 바뀔 때 한 번만 썸네일을 보내므로 여기서 기억해 둔다.
@@ -135,6 +148,29 @@ class SmtcPlayer {
       if (!track) this.tracks.set(session.app, { key, since: null });
       else if (track.key !== key) this.tracks.set(session.app, { key, since: this.now() });
     }
+  }
+
+  // Spotify와 브라우저가 동시에 재생되면 나중에 재생을 시작한 쪽만 남기고 먼저 재생하던 쪽을 일시정지한다.
+  // 처음 받은 상태는 기준으로만 쓰고(이미 둘 다 재생 중이면 건드리지 않는다), 같은 순간에 함께 시작한 쪽끼리는 멈추지 않는다.
+  pauseOverlaps() {
+    const previous = this.statuses;
+    const primed = this.primed;
+    this.statuses = new Map(this.sessions.map((session) => [session.app, session.status]));
+    this.primed = true;
+    if (!primed) return;
+    const playing = this.sessions.filter((session) => session?.status === "Playing");
+    for (const started of playing) {
+      const source = sourceOf(started.app);
+      if (!source || previous.get(started.app) === "Playing") continue;
+      for (const other of playing) {
+        const otherSource = sourceOf(other.app);
+        if (otherSource && otherSource !== source && previous.get(other.app) === "Playing") this.pause(other.app);
+      }
+    }
+  }
+
+  pause(app) {
+    this.child?.stdin?.write?.(`${JSON.stringify({ pause: app })}\n`);
   }
 
   // Edge는 다음 영상으로 넘어가도 진행 시간을 바로 고치지 않고, 재생 중에는 위치도 갱신하지 않는다.

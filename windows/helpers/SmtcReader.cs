@@ -1,7 +1,9 @@
 // Windows 미디어 세션(SMTC)을 1초마다 읽어 한 줄짜리 JSON으로 표준출력에 쓴다.
 // 세션 선택, 제목 정리, 진행 시간 계산은 Node 쪽(windows/now-playing)에서 한다.
 // 썸네일은 곡이 바뀌었을 때만 읽어 base64로 한 번 보낸다.
+// 표준입력으로 {"pause":"앱 이름"} 명령을 받으면 그 앱의 세션을 일시정지한다 (YouTube와 Spotify가 동시에 재생될 때 쓴다).
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Text;
 using System.Threading;
@@ -20,6 +22,34 @@ public static class SmtcReader {
     for (int i = 0; i < 300 && op.Status == AsyncStatus.Started; i++) Thread.Sleep(10);
     if (op.Status != AsyncStatus.Completed) throw new TimeoutException("SMTC 응답 없음 (" + op.Status + ")");
     return op.GetResults();
+  }
+
+  static readonly ConcurrentQueue<string> Commands = new ConcurrentQueue<string>();
+
+  // 표준입력은 Node가 보내는 명령만 읽는다. 메인 루프를 막지 않도록 따로 읽는다.
+  static void ReadCommands() {
+    var reader = new Thread(() => {
+      string line;
+      while ((line = Console.In.ReadLine()) != null) Commands.Enqueue(line);
+    });
+    reader.IsBackground = true;
+    reader.Start();
+  }
+
+  static void ApplyCommands(GlobalSystemMediaTransportControlsSessionManager manager, JavaScriptSerializer json) {
+    string line;
+    while (Commands.TryDequeue(out line)) {
+      try {
+        var command = json.Deserialize<Dictionary<string, object>>(line);
+        object app;
+        if (command == null || !command.TryGetValue("pause", out app) || !(app is string)) continue;
+        foreach (var session in manager.GetSessions()) {
+          if (session.SourceAppUserModelId == (string)app) Wait(session.TryPauseAsync());
+        }
+      } catch (Exception) {
+        // 잘못된 명령은 무시한다. 재생 정보 보내기는 계속한다.
+      }
+    }
   }
 
   static string ReadThumbnail(IRandomAccessStreamReference reference) {
@@ -42,10 +72,12 @@ public static class SmtcReader {
     var lastThumbs = new Dictionary<string, string>();
     var seenThumbKeys = new Dictionary<string, string>();
     GlobalSystemMediaTransportControlsSessionManager manager = null;
+    ReadCommands();
     while (true) {
       var line = new Dictionary<string, object>();
       try {
         if (manager == null) manager = Wait(GlobalSystemMediaTransportControlsSessionManager.RequestAsync());
+        ApplyCommands(manager, json);
         var sessions = new List<object>();
         foreach (var session in manager.GetSessions()) {
           var app = session.SourceAppUserModelId;
