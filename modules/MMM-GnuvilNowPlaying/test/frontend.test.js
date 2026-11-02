@@ -66,7 +66,7 @@ test("lists the next tracks below the caption", () => {
   const queue = dom.children.find((child) => child.className === "gnuvil-now-playing-queue");
   const [heading, ...rows] = queue.children;
   assert.equal(heading.textContent, "다음 곡");
-  assert.deepEqual(rows.map((row) => row.children.map((cell) => cell.textContent)),
+  assert.deepEqual(rows.map((row) => row.children.map((cell) => cell.text().trim())),
     [["1", "Hype Boy", "NewJeans"], ["2", "Blinding Lights", ""], ["3", "C", "c"]]);
   assert.ok(dom.children.indexOf(queue) > dom.children.findIndex((child) => child.className === "gnuvil-now-playing-caption"));
   instance.socketNotificationReceived("NOW_PLAYING_DATA", { playing: true, title: "Ditto", artist: "NewJeans" });

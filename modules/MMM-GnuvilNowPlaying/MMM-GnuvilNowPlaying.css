@@ -34,6 +34,7 @@
   border-top: 1px solid rgba(255, 255, 255, 0.22);
   color: var(--color-text);
   flex: 0 0 100%;
+  min-width: 0;
   padding-top: 12px;
 }
 
@@ -62,8 +63,6 @@
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .gnuvil-now-playing-queue-artist {
@@ -71,8 +70,32 @@
   font-size: 0.85em;
   max-width: 38%;
   overflow: hidden;
-  text-overflow: ellipsis;
+}
+
+.gnuvil-now-playing-queue-title-text,
+.gnuvil-now-playing-queue-artist-text {
+  display: inline-block;
   white-space: nowrap;
+}
+
+/* 칸보다 긴 곡명·가수는 버스 행선지처럼 끝까지 보여 주고 돌아온다. */
+.gnuvil-now-playing-queue-title.is-overflowing .gnuvil-now-playing-queue-title-text,
+.gnuvil-now-playing-queue-artist.is-overflowing .gnuvil-now-playing-queue-artist-text {
+  animation: gnuvil-queue-marquee var(--marquee-duration, 8s) ease-in-out infinite;
+  animation-delay: var(--marquee-delay, 0s);
+}
+
+@keyframes gnuvil-queue-marquee {
+  0%, 15% { transform: translateX(0); }
+  55%, 70% { transform: translateX(calc(-1 * var(--marquee-distance))); }
+  100% { transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gnuvil-now-playing-queue-title.is-overflowing .gnuvil-now-playing-queue-title-text,
+  .gnuvil-now-playing-queue-artist.is-overflowing .gnuvil-now-playing-queue-artist-text {
+    animation: none;
+  }
 }
 
 /* 표지·재생바 아래 한 줄을 통째로 쓰는 자막. 두 줄이면 줄을 나눠 보여 준다. */

@@ -6,6 +6,9 @@ Module.register("MMM-GnuvilNowPlaying", {
   start() {
     this.track = null;
     this.unavailable = false;
+    // 넘치는 글자의 길이(px)를 기억해 두면 화면을 다시 그려도 바로 같은 자리에서 이어서 움직인다.
+    this.overflows = new Map();
+    this.marqueeObserver = null;
     this.sendSocketNotification("NOW_PLAYING_CONFIG", this.config);
   },
 
@@ -23,7 +26,34 @@ Module.register("MMM-GnuvilNowPlaying", {
     this.updateDom();
   },
 
+  // 곡명·가수가 칸보다 길면 버스처럼 좌우로 움직인다.
+  // 미러는 1초마다 화면을 새로 그려 애니메이션이 처음부터 다시 시작하므로, 시작 위치를 시계로 맞춘다.
+  moveIfLong(box, text, overflow) {
+    box.classList.toggle("is-overflowing", overflow > 2);
+    if (overflow <= 2) return;
+    const seconds = Math.max(7, overflow / 28 + 4);
+    box.style.setProperty("--marquee-distance", `${overflow}px`);
+    box.style.setProperty("--marquee-duration", `${seconds}s`);
+    box.style.setProperty("--marquee-delay", `-${Date.now() % (seconds * 1000)}ms`);
+  },
+
+  marqueeCell(className, value, movers) {
+    const box = document.createElement("span");
+    box.className = className;
+    const text = document.createElement("span");
+    text.className = `${className}-text`;
+    text.textContent = value;
+    box.appendChild(text);
+    const key = `${className}${value}`;
+    if (this.overflows.has(key)) this.moveIfLong(box, text, this.overflows.get(key));
+    movers.push({ box, text, key });
+    return box;
+  },
+
   getDom() {
+    this.marqueeObserver?.disconnect();
+    this.marqueeObserver = null;
+    const movers = [];
     const wrapper = document.createElement("section");
     wrapper.className = "gnuvil-now-playing";
     const track = this.track;
@@ -86,16 +116,22 @@ Module.register("MMM-GnuvilNowPlaying", {
         const order = document.createElement("span");
         order.className = "gnuvil-now-playing-queue-order";
         order.textContent = String(index + 1);
-        const title = document.createElement("span");
-        title.className = "gnuvil-now-playing-queue-title";
-        title.textContent = next.title;
-        const artist = document.createElement("span");
-        artist.className = "gnuvil-now-playing-queue-artist";
-        artist.textContent = next.artist || "";
-        row.append(order, title, artist);
+        row.append(order,
+          this.marqueeCell("gnuvil-now-playing-queue-title", next.title, movers),
+          this.marqueeCell("gnuvil-now-playing-queue-artist", next.artist || "", movers));
         queue.appendChild(row);
       });
       wrapper.appendChild(queue);
+    }
+    if (typeof ResizeObserver !== "undefined" && movers.length) {
+      this.marqueeObserver = new ResizeObserver(() => {
+        for (const { box, text, key } of movers) {
+          const overflow = Math.ceil(text.scrollWidth - box.clientWidth);
+          this.overflows.set(key, overflow);
+          this.moveIfLong(box, text, overflow);
+        }
+      });
+      for (const { box } of movers) this.marqueeObserver.observe(box);
     }
     return wrapper;
   }
