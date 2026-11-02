@@ -17,6 +17,8 @@ const LOOKUP_CACHE_MS = 6 * 60 * 60 * 1000;
 const LOOKUP_RETRY_MS = 10 * 60 * 1000;
 const BROWSER = /^(msedge|chrome|firefox|brave|opera|whale|vivaldi)(\.exe)?$|Edge|Chrome|Firefox/i;
 const SPOTIFY = /spotify|soloist/i;
+// 소리를 막을 때 찾는 프로세스 이름 조각 (Spotify 앱, Spotify Soloist)
+const SPOTIFY_PROCESSES = ["spotify", "soloist"];
 
 function clean(value, maxLength = 240) {
   return String(value || "").replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, maxLength);
@@ -67,6 +69,8 @@ class SmtcPlayer {
     this.tracks = new Map();
     this.statuses = new Map();
     this.primed = false;
+    // Spotify 소리를 막아 둔 상태(null이면 도우미에 아직 아무것도 보내지 않았다).
+    this.spotifyMuted = null;
   }
 
   start() {
@@ -86,6 +90,8 @@ class SmtcPlayer {
     if (!this.running) return;
     const child = this.spawnImpl(this.command, [], { stdio: ["pipe", "pipe", "pipe"], windowsHide: true });
     this.child = child;
+    // 도우미를 새로 띄우면 이전에 보낸 음소거 명령은 사라졌으므로 다시 보낼 수 있게 한다.
+    this.spotifyMuted = null;
     let buffer = "";
     child.stdout.setEncoding("utf8");
     child.stdout.on("data", (chunk) => {
@@ -137,6 +143,7 @@ class SmtcPlayer {
     this.sessions = Array.isArray(data.sessions) ? data.sessions : [];
     this.receivedAt = this.now();
     this.pauseOverlaps();
+    this.muteSpotifyWhileBrowserPlays();
     for (const session of this.sessions) {
       const key = `${session.app}\x1f${session.title}\x1f${session.artist}`;
       // 도우미는 곡이 바뀔 때 한 번만 썸네일을 보내므로 여기서 기억해 둔다.
@@ -163,6 +170,20 @@ class SmtcPlayer {
     if (!spotify.length || !browsers.length) return;
     if (primed && [...spotify, ...browsers].every((session) => previous.get(session.app) === "Playing")) return;
     for (const session of spotify) this.pause(session.app);
+  }
+
+  // 브라우저(YouTube)가 재생 중인 동안은 Spotify(Soloist) 소리가 스피커로 나가지 않게 앱별로 음소거한다.
+  // 일시정지는 Soloist처럼 미디어 세션이 없는 프로그램에는 통하지 않아서 소리를 직접 막는다. 상태가 바뀔 때만 보낸다.
+  muteSpotifyWhileBrowserPlays() {
+    const browserPlaying = this.sessions.some((session) => session?.status === "Playing" && sourceOf(session.app) === "browser");
+    if (browserPlaying === this.spotifyMuted || (this.spotifyMuted === null && !browserPlaying)) return;
+    this.spotifyMuted = browserPlaying;
+    for (const name of SPOTIFY_PROCESSES) this.send({ mute: name, on: browserPlaying });
+  }
+
+  send(command) {
+    this.child?.stdin?.write?.(`${JSON.stringify(command)}
+`);
   }
 
   pause(app) {

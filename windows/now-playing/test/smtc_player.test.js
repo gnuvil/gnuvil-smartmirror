@@ -142,6 +142,9 @@ test("adds the YouTube caption for the playing browser video", async () => {
   assert.equal((await player.get()).caption, undefined);
 });
 
+// 소리 차단 명령은 따로 확인하므로, 일시정지 명령만 골라 본다.
+const pauses = (child) => child.stdin.written.filter((command) => command.pause);
+
 function overlapSetup() {
   const child = fakeChild();
   const player = new SmtcPlayer({ spawnImpl: () => child, now: () => 1_000_000, trackLookup: null,
@@ -157,14 +160,14 @@ test("pauses Spotify, not YouTube, when Spotify starts while the browser is play
   const { child, send, spotify, youtube } = overlapSetup();
   send([youtube("Playing"), spotify("Paused")]);
   send([youtube("Playing"), spotify("Playing")]);
-  assert.deepEqual(child.stdin.written, [{ pause: "Spotify.exe" }]);
+  assert.deepEqual(pauses(child), [{ pause: "Spotify.exe" }]);
 });
 
 test("pauses Spotify when YouTube starts while Spotify is playing", () => {
   const { child, send, spotify, youtube } = overlapSetup();
   send([spotify("Playing"), youtube("Paused")]);
   send([spotify("Playing"), youtube("Playing")]);
-  assert.deepEqual(child.stdin.written, [{ pause: "Spotify.exe" }]);
+  assert.deepEqual(pauses(child), [{ pause: "Spotify.exe" }]);
 });
 
 test("pauses Spotify when both play at startup or start together, and only once", () => {
@@ -175,8 +178,8 @@ test("pauses Spotify when both play at startup or start together, and only once"
   fresh.send([fresh.youtube("Paused"), fresh.spotify("Paused")]);
   fresh.send([fresh.youtube("Playing"), fresh.spotify("Playing")]);
   fresh.send([fresh.youtube("Playing"), fresh.spotify("Playing")]);
-  assert.deepEqual(child.stdin.written, [{ pause: "Spotify.exe" }]);
-  assert.deepEqual(fresh.child.stdin.written, [{ pause: "Spotify.exe" }]);
+  assert.deepEqual(pauses(child), [{ pause: "Spotify.exe" }]);
+  assert.deepEqual(pauses(fresh.child), [{ pause: "Spotify.exe" }]);
 });
 
 test("leaves a lone Spotify or YouTube playing", () => {
@@ -184,6 +187,27 @@ test("leaves a lone Spotify or YouTube playing", () => {
   send([spotify("Playing"), youtube("Paused")]);
   send([spotify("Paused"), youtube("Playing")]);
   send([spotify("Playing"), youtube("Paused")]);
+  assert.deepEqual(pauses(child), []);
+});
+
+test("mutes Spotify's sound while a browser plays and restores it afterwards, sending only changes", () => {
+  const { child, send, spotify, youtube } = overlapSetup();
+  send([spotify("Playing"), youtube("Paused")]);
+  assert.deepEqual(child.stdin.written, []);
+  send([spotify("Playing"), youtube("Playing")]);
+  send([spotify("Paused"), youtube("Playing")]);
+  const mutes = () => child.stdin.written.filter((command) => command.mute);
+  assert.deepEqual(mutes(), [{ mute: "spotify", on: true }, { mute: "soloist", on: true }]);
+  send([spotify("Paused"), youtube("Paused")]);
+  send([spotify("Playing"), youtube("Paused")]);
+  assert.deepEqual(mutes().slice(2), [{ mute: "spotify", on: false }, { mute: "soloist", on: false }]);
+  assert.equal(mutes().length, 4);
+});
+
+test("does not touch Spotify's sound when no browser has played", () => {
+  const { child, send, spotify } = overlapSetup();
+  send([spotify("Playing")]);
+  send([spotify("Paused")]);
   assert.deepEqual(child.stdin.written, []);
 });
 
@@ -191,7 +215,7 @@ test("does not pause between two browser sessions", () => {
   const { child, send, youtube } = overlapSetup();
   send([youtube("Paused"), { ...youtube("Paused"), app: "chrome.exe" }]);
   send([youtube("Paused"), { ...youtube("Playing"), app: "chrome.exe" }]);
-  assert.deepEqual(child.stdin.written, []);
+  assert.deepEqual(pauses(child), []);
 });
 
 test("does not clean titles from non-browser players", async () => {
